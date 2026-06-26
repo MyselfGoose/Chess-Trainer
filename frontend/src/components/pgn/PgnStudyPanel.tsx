@@ -46,7 +46,7 @@ export function PgnStudyPanel({
   const isAtRoot = currentNode?.id === currentGame.rootId;
 
   return (
-    <aside className="flex h-full max-h-[calc(100vh-3rem)] w-full min-w-0 flex-col gap-4 overflow-hidden rounded-xl bg-white p-4 shadow-sm ring-1 ring-zinc-200 lg:sticky lg:top-6">
+    <aside className="flex h-full w-full min-w-0 flex-col gap-3 overflow-hidden p-4">
       <div className="flex min-w-0 items-center justify-between gap-2">
         <h2 className="truncate text-lg font-semibold text-zinc-900">
           Repertoire
