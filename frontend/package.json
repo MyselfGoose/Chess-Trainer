@@ -10,6 +10,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@echecs/pgn": "^5.0.0",
+    "@echecs/san": "^3.2.0",
     "@lichess-org/chessground": "^10.1.1",
     "chess.js": "^1.4.0",
     "next": "16.2.9",

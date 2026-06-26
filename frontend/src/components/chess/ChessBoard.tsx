@@ -4,40 +4,63 @@ import { useEffect, useRef } from "react";
 import { Chessground } from "@lichess-org/chessground";
 import type { Api } from "@lichess-org/chessground/api";
 import type { Color, Key } from "@lichess-org/chessground/types";
+import { Chess } from "chess.js";
 import type { Square } from "chess.js";
 
 import { buildMovableDests } from "@/lib/chess/destinations";
 import type { ChessGame } from "@/lib/chess/game";
 import type { ChessGameSnapshot } from "@/lib/chess/types";
 
-interface ChessBoardProps {
+type PlayModeProps = {
+  mode: "play";
   chess: ChessGame;
   snapshot: ChessGameSnapshot;
   onMove: (from: Square, to: Square) => boolean;
   orientation?: "white" | "black";
   className?: string;
-}
+};
+
+type StudyModeProps = {
+  mode: "study";
+  fen: string;
+  lastMove?: [Square, Square] | null;
+  orientation?: "white" | "black";
+  className?: string;
+};
+
+export type ChessBoardProps = PlayModeProps | StudyModeProps;
 
 function toChessgroundColor(color: "white" | "black"): Color {
   return color;
 }
 
-export function ChessBoard({
-  chess,
-  snapshot,
-  onMove,
-  orientation = "white",
-  className,
-}: ChessBoardProps) {
+function getTurnFromFen(fen: string): "white" | "black" {
+  const chess = new Chess(fen);
+  return chess.turn() === "w" ? "white" : "black";
+}
+
+function isInCheck(fen: string): boolean {
+  const chess = new Chess(fen);
+  return chess.inCheck();
+}
+
+export function ChessBoard(props: ChessBoardProps) {
+  const { orientation = "white", className } = props;
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const apiRef = useRef<Api | null>(null);
-  const onMoveRef = useRef(onMove);
-  const fenRef = useRef(snapshot.fen);
+  const onMoveRef = useRef(
+    props.mode === "play" ? props.onMove : () => false,
+  );
+  const fenRef = useRef(props.mode === "play" ? props.snapshot.fen : props.fen);
 
   useEffect(() => {
-    onMoveRef.current = onMove;
-    fenRef.current = snapshot.fen;
+    if (props.mode === "play") {
+      onMoveRef.current = props.onMove;
+      fenRef.current = props.snapshot.fen;
+    } else {
+      fenRef.current = props.fen;
+    }
   });
 
   useEffect(() => {
@@ -47,6 +70,34 @@ export function ChessBoard({
       return;
     }
 
+    if (props.mode === "study") {
+      const turnColor = toChessgroundColor(getTurnFromFen(props.fen));
+      const inCheck = isInCheck(props.fen);
+
+      const api = Chessground(element, {
+        fen: props.fen,
+        orientation,
+        turnColor,
+        check: inCheck ? turnColor : undefined,
+        lastMove: props.lastMove ?? undefined,
+        coordinates: true,
+        animation: { enabled: true, duration: 200 },
+        highlight: { lastMove: true, check: true },
+        viewOnly: true,
+        draggable: { enabled: false },
+        selectable: { enabled: false },
+        movable: { free: false, color: undefined, dests: new Map() },
+        addDimensionsCssVarsTo: container,
+      });
+
+      apiRef.current = api;
+      return () => {
+        api.destroy();
+        apiRef.current = null;
+      };
+    }
+
+    const { chess, snapshot } = props;
     const engine = chess.getEngine();
     const turnColor = toChessgroundColor(snapshot.turn);
 
@@ -85,7 +136,7 @@ export function ChessBoard({
       apiRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount once; sync via second effect
-  }, [chess, orientation]);
+  }, [orientation, props.mode]);
 
   useEffect(() => {
     const api = apiRef.current;
@@ -93,6 +144,21 @@ export function ChessBoard({
       return;
     }
 
+    if (props.mode === "study") {
+      const turnColor = toChessgroundColor(getTurnFromFen(props.fen));
+      const inCheck = isInCheck(props.fen);
+      api.set({
+        fen: props.fen,
+        turnColor,
+        check: inCheck ? turnColor : undefined,
+        lastMove: props.lastMove ?? undefined,
+        viewOnly: true,
+        movable: { free: false, color: undefined, dests: new Map() },
+      });
+      return;
+    }
+
+    const { chess, snapshot } = props;
     const engine = chess.getEngine();
     const turnColor = toChessgroundColor(snapshot.turn);
     const gameOver = snapshot.result.status !== "ongoing";
@@ -108,7 +174,7 @@ export function ChessBoard({
         showDests: !gameOver,
       },
     });
-  }, [chess, snapshot]);
+  }, [props]);
 
   return (
     <div
