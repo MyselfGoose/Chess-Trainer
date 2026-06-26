@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import type { Square } from "chess.js";
 
 import { ChessBoard } from "@/components/chess/ChessBoard";
@@ -15,6 +15,8 @@ interface StudyPendingPromotion {
   from: Square;
   to: Square;
 }
+
+type BoardOrientation = "white" | "black";
 
 function formatResult(
   result: ReturnType<typeof useChessGame>["snapshot"]["result"],
@@ -33,11 +35,39 @@ function formatResult(
   }
 }
 
+function BoardToolbar({
+  orientation,
+  onFlip,
+  children,
+}: {
+  orientation: BoardOrientation;
+  onFlip: () => void;
+  children?: ReactNode;
+}) {
+  return (
+    <div className="flex w-full max-w-[min(100%,560px)] items-center justify-between gap-3">
+      <button
+        type="button"
+        onClick={onFlip}
+        className="rounded-md bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 ring-1 ring-zinc-200 transition hover:bg-zinc-50"
+      >
+        Flip board ({orientation === "white" ? "White" : "Black"} below)
+      </button>
+      {children}
+    </div>
+  );
+}
+
 export default function BoardPage() {
   const study = usePgnStudy();
   const play = useChessGame();
+  const [orientation, setOrientation] = useState<BoardOrientation>("white");
   const [studyPromotion, setStudyPromotion] =
     useState<StudyPendingPromotion | null>(null);
+
+  const flipBoard = useCallback(() => {
+    setOrientation((current) => (current === "white" ? "black" : "white"));
+  }, []);
 
   const handleStudyMove = useCallback(
     (from: Square, to: Square): boolean => {
@@ -74,11 +104,19 @@ export default function BoardPage() {
   const studyTurnColor =
     study.turnLabel === "White" ? "white" : "black";
 
+  if (!study.isHydrated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-zinc-100">
+        <p className="text-sm text-zinc-500">Loading board…</p>
+      </div>
+    );
+  }
+
   if (study.hasStudy && study.study && study.currentGame && study.lineStats) {
     return (
-      <div className="min-h-screen bg-zinc-100">
-        <div className="mx-auto flex min-h-screen max-w-7xl flex-col gap-6 px-4 py-6 lg:flex-row lg:items-start lg:py-8">
-          <div className="flex shrink-0 flex-col items-center gap-4 lg:w-[min(100%,560px)]">
+      <div className="min-h-screen overflow-x-hidden bg-zinc-100">
+        <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-6 px-4 py-6 lg:grid-cols-[minmax(0,560px)_minmax(0,1fr)] lg:items-start lg:py-8">
+          <div className="flex min-w-0 flex-col items-center gap-4">
             <header className="w-full text-center lg:text-left">
               <h1 className="text-2xl font-semibold text-zinc-900">
                 Study mode
@@ -88,7 +126,9 @@ export default function BoardPage() {
               </p>
             </header>
 
-            <div className="w-full max-w-[min(100%,560px)]">
+            <BoardToolbar orientation={orientation} onFlip={flipBoard} />
+
+            <div className="w-full max-w-[560px]">
               <div className="rounded-sm p-1 shadow-lg ring-1 ring-black/10">
                 <ChessBoard
                   mode="study"
@@ -96,6 +136,7 @@ export default function BoardPage() {
                   lastMove={study.boardLastMove}
                   repertoireDests={study.repertoireDests}
                   onRepertoireMove={handleStudyMove}
+                  orientation={orientation}
                 />
               </div>
             </div>
@@ -108,7 +149,7 @@ export default function BoardPage() {
             </Link>
           </div>
 
-          <div className="min-h-[400px] flex-1 lg:min-h-0">
+          <div className="min-h-[400px] min-w-0">
             <PgnStudyPanel
               games={study.study.games}
               selectedGameIndex={study.study.selectedGameIndex}
@@ -140,7 +181,7 @@ export default function BoardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-100">
+    <div className="min-h-screen overflow-x-hidden bg-zinc-100">
       <div className="mx-auto flex min-h-screen max-w-4xl flex-col items-center justify-center gap-6 px-4 py-10">
         <header className="text-center">
           <h1 className="text-2xl font-semibold text-zinc-900">Chess Board</h1>
@@ -155,6 +196,8 @@ export default function BoardPage() {
           </Link>
         </header>
 
+        <BoardToolbar orientation={orientation} onFlip={flipBoard} />
+
         <div className="w-full max-w-[min(100%,560px)]">
           <div className="rounded-sm p-1 shadow-lg ring-1 ring-black/10">
             <ChessBoard
@@ -162,6 +205,7 @@ export default function BoardPage() {
               chess={play.chess}
               snapshot={play.snapshot}
               onMove={play.attemptMove}
+              orientation={orientation}
             />
           </div>
         </div>

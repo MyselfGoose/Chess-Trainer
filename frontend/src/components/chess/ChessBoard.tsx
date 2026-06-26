@@ -201,6 +201,7 @@ export function ChessBoard(props: ChessBoardProps) {
 
       api.set({
         fen: props.fen,
+        orientation,
         turnColor,
         check: inCheck ? turnColor : undefined,
         lastMove: props.lastMove ?? undefined,
@@ -226,6 +227,7 @@ export function ChessBoard(props: ChessBoardProps) {
 
     api.set({
       fen: snapshot.fen,
+      orientation,
       turnColor,
       check: snapshot.inCheck ? turnColor : undefined,
       lastMove: snapshot.lastMove ?? undefined,
@@ -235,7 +237,7 @@ export function ChessBoard(props: ChessBoardProps) {
         showDests: !gameOver,
       },
     });
-  }, [props]);
+  }, [orientation, props]);
 
   return (
     <div

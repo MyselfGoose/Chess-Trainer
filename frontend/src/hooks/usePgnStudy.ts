@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Chess } from "chess.js";
 import type { Square } from "chess.js";
 
@@ -54,6 +54,7 @@ export interface UsePgnStudyResult {
   turnLabel: string;
   isAtLineEnd: boolean;
   hasStudy: boolean;
+  isHydrated: boolean;
   goToNode: (nodeId: string) => void;
   goBack: () => void;
   selectChoice: (nodeId: string) => void;
@@ -73,7 +74,12 @@ interface StudyUiState {
   currentNodeId: string | null;
 }
 
-function getInitialStudyState(): StudyUiState {
+const EMPTY_STUDY_STATE: StudyUiState = {
+  study: null,
+  currentNodeId: null,
+};
+
+function readStudyFromSession(): StudyUiState {
   const loaded = loadStudy();
   return {
     study: loaded,
@@ -82,15 +88,19 @@ function getInitialStudyState(): StudyUiState {
 }
 
 export function usePgnStudy(): UsePgnStudyResult {
-  const [uiState, setUiState] = useState<StudyUiState>(getInitialStudyState);
+  const [uiState, setUiState] = useState<StudyUiState>(EMPTY_STUDY_STATE);
+  const [isHydrated, setIsHydrated] = useState(false);
   const { study, currentNodeId } = uiState;
 
+  useEffect(() => {
+    // Hydration-safe: server and first client paint both use EMPTY_STUDY_STATE.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sessionStorage is client-only
+    setUiState(readStudyFromSession());
+    setIsHydrated(true);
+  }, []);
+
   const reloadStudy = useCallback(() => {
-    const loaded = loadStudy();
-    setUiState({
-      study: loaded,
-      currentNodeId: loaded?.games[loaded.selectedGameIndex]?.rootId ?? null,
-    });
+    setUiState(readStudyFromSession());
   }, []);
 
   const currentGame = useMemo(() => {
@@ -243,7 +253,8 @@ export function usePgnStudy(): UsePgnStudyResult {
     boardLastMove,
     turnLabel,
     isAtLineEnd,
-    hasStudy: study !== null && study.games.length > 0,
+    hasStudy: isHydrated && study !== null && study.games.length > 0,
+    isHydrated,
     goToNode,
     goBack,
     selectChoice,

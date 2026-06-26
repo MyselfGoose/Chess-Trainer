@@ -49,8 +49,8 @@ function MoveChoiceCard({
           : "border-zinc-200 bg-white hover:border-green-400 hover:bg-green-50/50"
       }`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <span className="font-mono text-base font-semibold text-zinc-900">
+      <div className="flex min-w-0 items-start justify-between gap-2">
+        <span className="min-w-0 break-words font-mono text-base font-semibold text-zinc-900">
           {formatMoveLabel(choice)}
           {nagText ? (
             <span className="ml-1 font-normal text-zinc-500">{nagText}</span>
@@ -75,8 +75,8 @@ function MoveChoiceCard({
 
       {comment ? (
         <p
-          className={`mt-2 text-sm leading-relaxed text-zinc-600 ${
-            expanded ? "" : "line-clamp-2"
+          className={`mt-2 break-words text-sm leading-relaxed text-zinc-600 ${
+            expanded ? "" : "line-clamp-3"
           }`}
         >
           {comment}
@@ -129,12 +129,12 @@ export function PgnMoveChoices({
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="min-w-0">
       <p className="text-sm font-medium text-zinc-700">
         {turnLabel} to move — {choices.length}{" "}
         {choices.length === 1 ? "option" : "options"}
       </p>
-      <div className="flex flex-col gap-2">
+      <div className="mt-2 flex flex-col gap-2">
         {choices.map((choice) => (
           <MoveChoiceCard
             key={choice.node.id}

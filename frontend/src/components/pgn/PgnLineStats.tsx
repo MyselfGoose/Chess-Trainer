@@ -6,19 +6,22 @@ interface PgnLineStatsProps {
 
 export function PgnLineStats({ stats }: PgnLineStatsProps) {
   return (
-    <div className="rounded-lg bg-zinc-50 px-4 py-3 text-sm text-zinc-700 ring-1 ring-zinc-200">
-      <span className="font-medium">{stats.lineCount}</span>{" "}
-      {stats.lineCount === 1 ? "line" : "lines"}
-      <span className="mx-2 text-zinc-300">·</span>
-      <span className="font-medium">{stats.maxDepth}</span> plies max depth
-      <span className="mx-2 text-zinc-300">·</span>
-      <span className="font-medium">{stats.totalMoves}</span> moves
+    <div className="flex min-w-0 flex-wrap gap-x-3 gap-y-1 rounded-lg bg-zinc-50 px-3 py-2.5 text-sm text-zinc-700 ring-1 ring-zinc-200">
+      <span>
+        <span className="font-medium">{stats.lineCount}</span>{" "}
+        {stats.lineCount === 1 ? "line" : "lines"}
+      </span>
+      <span>
+        <span className="font-medium">{stats.maxDepth}</span> plies max
+      </span>
+      <span>
+        <span className="font-medium">{stats.totalMoves}</span> moves
+      </span>
       {stats.variationCount > 0 ? (
-        <>
-          <span className="mx-2 text-zinc-300">·</span>
-          <span className="font-medium">{stats.variationCount}</span> variation
-          {stats.variationCount === 1 ? "" : "s"}
-        </>
+        <span>
+          <span className="font-medium">{stats.variationCount}</span>{" "}
+          {stats.variationCount === 1 ? "variation" : "variations"}
+        </span>
       ) : null}
     </div>
   );

@@ -14,9 +14,10 @@ const PRIMARY_TAGS = [
 
 interface PgnHeadersCardProps {
   game: StudyGame;
+  compact?: boolean;
 }
 
-export function PgnHeadersCard({ game }: PgnHeadersCardProps) {
+export function PgnHeadersCard({ game, compact = false }: PgnHeadersCardProps) {
   const { meta } = game;
   const additionalTags = Object.keys(meta).filter(
     (key) =>
@@ -28,59 +29,70 @@ export function PgnHeadersCard({ game }: PgnHeadersCardProps) {
   const hasCustomFen = meta.SetUp === "1" && meta.FEN;
 
   return (
-    <div className="rounded-lg bg-white p-4 ring-1 ring-zinc-200">
-      <div className="flex items-baseline justify-between gap-2">
-        <h2 className="text-lg font-semibold text-zinc-900">
+    <div
+      className={
+        compact
+          ? "min-w-0"
+          : "min-w-0 rounded-lg bg-white p-4 ring-1 ring-zinc-200"
+      }
+    >
+      <div className="flex min-w-0 items-baseline justify-between gap-2">
+        <h3 className="min-w-0 break-words text-base font-semibold text-zinc-900">
           {meta.White ?? "White"} vs {meta.Black ?? "Black"}
-        </h2>
+        </h3>
         {meta.Result ? (
-          <span className="text-sm font-medium text-zinc-500">{meta.Result}</span>
+          <span className="shrink-0 text-sm font-medium text-zinc-500">
+            {meta.Result}
+          </span>
         ) : null}
       </div>
 
-      <dl className="mt-3 grid gap-2 text-sm">
+      <dl className="mt-3 grid min-w-0 gap-2 text-sm">
         {meta.Event ? (
-          <div className="flex gap-2">
-            <dt className="w-20 shrink-0 font-medium text-zinc-500">Event</dt>
-            <dd className="text-zinc-800">{meta.Event}</dd>
+          <div className="grid min-w-0 grid-cols-[4.5rem_1fr] gap-2">
+            <dt className="font-medium text-zinc-500">Event</dt>
+            <dd className="break-words text-zinc-800">{meta.Event}</dd>
           </div>
         ) : null}
         {meta.Date ? (
-          <div className="flex gap-2">
-            <dt className="w-20 shrink-0 font-medium text-zinc-500">Date</dt>
-            <dd className="text-zinc-800">{meta.Date}</dd>
+          <div className="grid min-w-0 grid-cols-[4.5rem_1fr] gap-2">
+            <dt className="font-medium text-zinc-500">Date</dt>
+            <dd className="break-words text-zinc-800">{meta.Date}</dd>
           </div>
         ) : null}
         {meta.ECO ? (
-          <div className="flex gap-2">
-            <dt className="w-20 shrink-0 font-medium text-zinc-500">ECO</dt>
-            <dd className="text-zinc-800">{meta.ECO}</dd>
+          <div className="grid min-w-0 grid-cols-[4.5rem_1fr] gap-2">
+            <dt className="font-medium text-zinc-500">ECO</dt>
+            <dd className="break-words text-zinc-800">{meta.ECO}</dd>
           </div>
         ) : null}
         {meta.Opening ? (
-          <div className="flex gap-2">
-            <dt className="w-20 shrink-0 font-medium text-zinc-500">Opening</dt>
-            <dd className="text-zinc-800">{meta.Opening}</dd>
+          <div className="grid min-w-0 grid-cols-[4.5rem_1fr] gap-2">
+            <dt className="font-medium text-zinc-500">Opening</dt>
+            <dd className="break-words text-zinc-800">{meta.Opening}</dd>
           </div>
         ) : null}
       </dl>
 
       {hasCustomFen ? (
-        <p className="mt-3 rounded-md bg-blue-50 px-2 py-1.5 text-xs text-blue-800">
+        <p className="mt-3 break-words rounded-md bg-blue-50 px-2 py-1.5 text-xs text-blue-800">
           Custom starting position
         </p>
       ) : null}
 
       {additionalTags.length > 0 ? (
-        <details className="mt-3">
+        <details className="mt-3 min-w-0">
           <summary className="cursor-pointer text-xs font-medium text-zinc-500">
             Additional tags ({additionalTags.length})
           </summary>
-          <dl className="mt-2 grid gap-1 text-xs">
+          <dl className="mt-2 grid min-w-0 gap-1 text-xs">
             {additionalTags.map((key) => (
-              <div key={key} className="flex gap-2">
-                <dt className="w-24 shrink-0 text-zinc-500">{key}</dt>
-                <dd className="text-zinc-700">{meta[key]}</dd>
+              <div
+                key={key}
+                className="grid min-w-0 grid-cols-[5.5rem_1fr] gap-2"
+              >
+                <dt className="truncate text-zinc-500">{key}</dt>
+                <dd className="break-words text-zinc-700">{meta[key]}</dd>
               </div>
             ))}
           </dl>

@@ -46,30 +46,34 @@ export function PgnStudyPanel({
   const isAtRoot = currentNode?.id === currentGame.rootId;
 
   return (
-    <div className="flex h-full max-h-[calc(100vh-3rem)] flex-col gap-4 lg:sticky lg:top-6">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold text-zinc-900">Repertoire</h2>
+    <aside className="flex h-full max-h-[calc(100vh-3rem)] w-full min-w-0 flex-col gap-4 overflow-hidden rounded-xl bg-white p-4 shadow-sm ring-1 ring-zinc-200 lg:sticky lg:top-6">
+      <div className="flex min-w-0 items-center justify-between gap-2">
+        <h2 className="truncate text-lg font-semibold text-zinc-900">
+          Repertoire
+        </h2>
         <button
           type="button"
           onClick={onClear}
-          className="rounded-md px-2 py-1 text-xs font-medium text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-800"
+          className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-800"
         >
           Clear study
         </button>
       </div>
 
-      <PgnGameSelector
-        games={games}
-        selectedIndex={selectedGameIndex}
-        onSelect={onSelectGame}
-      />
+      <div className="min-w-0">
+        <PgnGameSelector
+          games={games}
+          selectedIndex={selectedGameIndex}
+          onSelect={onSelectGame}
+        />
+      </div>
 
-      <details className="rounded-lg bg-white ring-1 ring-zinc-200">
-        <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-zinc-700">
+      <details className="min-w-0 overflow-hidden rounded-lg ring-1 ring-zinc-200">
+        <summary className="cursor-pointer px-3 py-2.5 text-sm font-medium text-zinc-700">
           Game info & stats
         </summary>
-        <div className="flex flex-col gap-3 border-t border-zinc-100 px-4 pb-4 pt-3">
-          <PgnHeadersCard game={currentGame} />
+        <div className="flex min-w-0 flex-col gap-3 border-t border-zinc-100 px-3 pb-3 pt-2">
+          <PgnHeadersCard game={currentGame} compact />
           <PgnLineStats stats={lineStats} />
         </div>
       </details>
@@ -80,7 +84,7 @@ export function PgnStudyPanel({
         onSelect={onSelectNode}
       />
 
-      <div className="min-h-0 flex-1 overflow-y-auto rounded-lg bg-white p-3 ring-1 ring-zinc-200">
+      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden rounded-lg bg-zinc-50 p-3 ring-1 ring-zinc-200">
         <PgnMoveChoices
           choices={availableMoves}
           currentNodeId={currentNodeId}
@@ -95,10 +99,10 @@ export function PgnStudyPanel({
         type="button"
         onClick={onBack}
         disabled={!canGoBack}
-        className="w-full rounded-md bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
+        className="w-full shrink-0 rounded-md bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
       >
         Back one move
       </button>
-    </div>
+    </aside>
   );
 }
