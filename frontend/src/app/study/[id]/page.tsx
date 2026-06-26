@@ -1,10 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { use, useCallback, useState, type ReactNode } from "react";
+import { use, useCallback, useRef, useState, type ReactNode } from "react";
 import type { Square } from "chess.js";
 
 import { ChessBoard } from "@/components/chess/ChessBoard";
+import {
+  MoveNavigationBindings,
+  MoveNavigationHints,
+} from "@/components/chess/MoveNavigationBindings";
 import { PromotionDialog } from "@/components/chess/PromotionDialog";
 import { PgnStudyPanel } from "@/components/pgn/PgnStudyPanel";
 import type { PromotionPiece } from "@/lib/chess/types";
@@ -52,6 +56,7 @@ export default function StudyPage({
 }) {
   const { id } = use(params);
   const study = usePgnStudy(id);
+  const boardNavRef = useRef<HTMLDivElement>(null);
   const [orientation, setOrientation] = useState<BoardOrientation>("white");
   const [studyPromotion, setStudyPromotion] =
     useState<StudyPendingPromotion | null>(null);
@@ -131,15 +136,23 @@ export default function StudyPage({
         </header>
 
         <BoardFrame>
-          <ChessBoard
-            mode="study"
-            fen={study.boardFen}
-            lastMove={study.boardLastMove}
-            repertoireDests={study.repertoireDests}
-            onRepertoireMove={handleStudyMove}
-            orientation={orientation}
-          />
+          <div ref={boardNavRef} className="h-full w-full">
+            <ChessBoard
+              mode="study"
+              fen={study.boardFen}
+              lastMove={study.boardLastMove}
+              repertoireDests={study.repertoireDests}
+              onRepertoireMove={handleStudyMove}
+              orientation={orientation}
+            />
+          </div>
         </BoardFrame>
+        <MoveNavigationHints />
+        <MoveNavigationBindings
+          navigation={study.navigation}
+          enabled={studyPromotion === null}
+          wheelTargetRef={boardNavRef}
+        />
       </section>
 
       <aside className="flex h-[42dvh] min-h-0 w-full min-w-0 shrink-0 flex-col border-t border-zinc-200 bg-white lg:h-full lg:w-[min(100%,26rem)] lg:max-w-md lg:flex-1 lg:shrink-0 lg:border-l lg:border-t-0">

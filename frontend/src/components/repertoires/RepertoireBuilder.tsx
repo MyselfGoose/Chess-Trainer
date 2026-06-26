@@ -1,10 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useRef, useState, type ReactNode } from "react";
 import type { Square } from "chess.js";
 
 import { ChessBoard } from "@/components/chess/ChessBoard";
+import {
+  MoveNavigationBindings,
+  MoveNavigationHints,
+} from "@/components/chess/MoveNavigationBindings";
 import { PromotionDialog } from "@/components/chess/PromotionDialog";
 import { PgnLineStats } from "@/components/pgn/PgnLineStats";
 import { PgnPathBar } from "@/components/pgn/PgnPathBar";
@@ -58,6 +62,7 @@ export function RepertoireBuilder({
 }: RepertoireBuilderProps) {
   const router = useRouter();
   const builder = useRepertoireBuilder({ repertoireId, initialName });
+  const boardNavRef = useRef<HTMLDivElement>(null);
   const [orientation, setOrientation] = useState<BoardOrientation>("white");
   const [pendingPromotion, setPendingPromotion] =
     useState<PendingPromotion | null>(null);
@@ -138,15 +143,23 @@ export function RepertoireBuilder({
         </header>
 
         <BoardFrame>
-          <ChessBoard
-            mode="study"
-            fen={builder.boardFen}
-            lastMove={builder.boardLastMove}
-            repertoireDests={builder.movableDests}
-            onRepertoireMove={handleMove}
-            orientation={orientation}
-          />
+          <div ref={boardNavRef} className="h-full w-full">
+            <ChessBoard
+              mode="study"
+              fen={builder.boardFen}
+              lastMove={builder.boardLastMove}
+              repertoireDests={builder.movableDests}
+              onRepertoireMove={handleMove}
+              orientation={orientation}
+            />
+          </div>
         </BoardFrame>
+        <MoveNavigationHints />
+        <MoveNavigationBindings
+          navigation={builder.navigation}
+          enabled={pendingPromotion === null}
+          wheelTargetRef={boardNavRef}
+        />
       </section>
 
       <aside className="flex min-h-0 w-full min-w-0 flex-col gap-3 border-t border-zinc-200 bg-white p-4 lg:w-[min(100%,24rem)] lg:max-w-md lg:border-l lg:border-t-0">

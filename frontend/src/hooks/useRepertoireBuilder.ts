@@ -9,6 +9,15 @@ import type { PromotionPiece } from "@/lib/chess/types";
 import { computeLineStats } from "@/lib/pgn";
 import type { LineStats, StudyGame, StudyNode } from "@/lib/pgn";
 import {
+  canNavigateBack,
+  canNavigateForward,
+  canNavigateToEnd,
+  canNavigateToStart,
+  getForwardNodeId,
+  resolveTipAfterNavigate,
+} from "@/lib/navigation/treeNavigation";
+import type { MoveNavigationHandlers } from "@/hooks/useMoveNavigation";
+import {
   createRepertoire,
   getRepertoire,
   RepertoireStorageError,
@@ -56,6 +65,11 @@ export interface UseRepertoireBuilderResult {
   saveError: string | null;
   isSaving: boolean;
   goToNode: (nodeId: string) => void;
+  goBack: () => void;
+  goForward: () => void;
+  goToStart: () => void;
+  goToEnd: () => void;
+  navigation: MoveNavigationHandlers;
   attemptMove: (from: Square, to: Square) => boolean;
   needsPromotion: (from: Square, to: Square) => boolean;
   completePromotion: (from: Square, to: Square, piece: PromotionPiece) => boolean;
@@ -75,6 +89,7 @@ function loadBuilderState(
 ): {
   game: StudyGame;
   currentNodeId: string;
+  tipNodeId: string;
   registeredLeafIds: string[];
   name: string;
   repertoireId?: string;
@@ -86,6 +101,7 @@ function loadBuilderState(
       return {
         game: existing.games[0],
         currentNodeId: existing.games[0].rootId,
+        tipNodeId: existing.games[0].rootId,
         registeredLeafIds: existing.registeredLeafIds,
         name: existing.name,
         repertoireId: existing.id,
@@ -98,6 +114,7 @@ function loadBuilderState(
   return {
     game,
     currentNodeId: game.rootId,
+    tipNodeId: game.rootId,
     registeredLeafIds: [],
     name,
     repertoireId,
@@ -115,7 +132,8 @@ export function useRepertoireBuilder(
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const { game, currentNodeId, registeredLeafIds, name, repertoireId } = state;
+  const { game, currentNodeId, tipNodeId, registeredLeafIds, name, repertoireId } =
+    state;
 
   useEffect(() => {
     if (!isDirty) {
@@ -174,15 +192,50 @@ export function useRepertoireBuilder(
   const canSave = registeredLeafIds.length > 0 && name.trim().length > 0;
   const canUndo = canUndoMove(game, currentNodeId, registeredLeafIds);
 
-  const goToNode = useCallback((nodeId: string) => {
+  const navigateToNode = useCallback((nodeId: string) => {
     setState((prev) => {
       if (!getNode(prev.game, nodeId)) {
         return prev;
       }
-      return { ...prev, currentNodeId: nodeId };
+      const resolvedTip = resolveTipAfterNavigate(
+        prev.game,
+        prev.tipNodeId,
+        nodeId,
+      );
+      return {
+        ...prev,
+        currentNodeId: nodeId,
+        tipNodeId: resolvedTip,
+      };
     });
     setRegisterMessage(null);
   }, []);
+
+  const goToNode = navigateToNode;
+
+  const goBack = useCallback(() => {
+    const node = getNode(game, currentNodeId);
+    if (!node?.parentId) {
+      return;
+    }
+    navigateToNode(node.parentId);
+  }, [currentNodeId, game, navigateToNode]);
+
+  const goForward = useCallback(() => {
+    const nextId = getForwardNodeId(game, currentNodeId, tipNodeId);
+    if (!nextId) {
+      return;
+    }
+    navigateToNode(nextId);
+  }, [currentNodeId, game, navigateToNode, tipNodeId]);
+
+  const goToStart = useCallback(() => {
+    navigateToNode(game.rootId);
+  }, [game.rootId, navigateToNode]);
+
+  const goToEnd = useCallback(() => {
+    navigateToNode(tipNodeId);
+  }, [navigateToNode, tipNodeId]);
 
   const applyBoardMove = useCallback(
     (from: Square, to: Square, promotion?: PromotionPiece): boolean => {
@@ -194,6 +247,11 @@ export function useRepertoireBuilder(
         ...prev,
         game: result.game,
         currentNodeId: result.nodeId,
+        tipNodeId: resolveTipAfterNavigate(
+          result.game,
+          prev.tipNodeId,
+          result.nodeId,
+        ),
       }));
       setIsDirty(true);
       setRegisterMessage(null);
@@ -256,11 +314,17 @@ export function useRepertoireBuilder(
     if (!result) {
       return;
     }
-    setState((prev) => ({
-      ...prev,
-      game: result.game,
-      currentNodeId: result.nodeId,
-    }));
+    setState((prev) => {
+      const nextTip = getNode(result.game, prev.tipNodeId)
+        ? prev.tipNodeId
+        : result.nodeId;
+      return {
+        ...prev,
+        game: result.game,
+        currentNodeId: result.nodeId,
+        tipNodeId: nextTip,
+      };
+    });
     setIsDirty(true);
     setRegisterMessage(null);
   }, [currentNodeId, game]);
@@ -315,6 +379,27 @@ export function useRepertoireBuilder(
     }
   }, [canSave, game, name, registeredLeafIds, repertoireId]);
 
+  const navigation = useMemo((): MoveNavigationHandlers => {
+    return {
+      goBack,
+      goForward,
+      goToStart,
+      goToEnd,
+      canGoBack: canNavigateBack(game, currentNodeId),
+      canGoForward: canNavigateForward(game, currentNodeId, tipNodeId),
+      canGoToStart: canNavigateToStart(game, currentNodeId),
+      canGoToEnd: canNavigateToEnd(game, currentNodeId, tipNodeId),
+    };
+  }, [
+    currentNodeId,
+    game,
+    goBack,
+    goForward,
+    goToEnd,
+    goToStart,
+    tipNodeId,
+  ]);
+
   return {
     name,
     setName,
@@ -337,6 +422,11 @@ export function useRepertoireBuilder(
     saveError,
     isSaving,
     goToNode,
+    goBack,
+    goForward,
+    goToStart,
+    goToEnd,
+    navigation,
     attemptMove,
     needsPromotion,
     completePromotion,

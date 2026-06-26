@@ -90,6 +90,15 @@ export class ChessGame {
     this.chess.reset();
   }
 
+  loadFen(fen: string): boolean {
+    try {
+      this.chess.load(fen);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   getEngine(): Chess {
     return this.chess;
   }

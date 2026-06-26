@@ -1,8 +1,12 @@
 "use client";
 
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useRef, useState, type ReactNode } from "react";
 
 import { ChessBoard } from "@/components/chess/ChessBoard";
+import {
+  MoveNavigationBindings,
+  MoveNavigationHints,
+} from "@/components/chess/MoveNavigationBindings";
 import { PromotionDialog } from "@/components/chess/PromotionDialog";
 import { useChessGame } from "@/hooks/useChessGame";
 
@@ -92,6 +96,7 @@ function PlayControls({
 
 export default function BoardPage() {
   const play = useChessGame();
+  const boardNavRef = useRef<HTMLDivElement>(null);
   const [orientation, setOrientation] = useState<BoardOrientation>("white");
 
   const flipBoard = useCallback(() => {
@@ -117,14 +122,22 @@ export default function BoardPage() {
         </header>
 
         <BoardFrame>
-          <ChessBoard
-            mode="play"
-            chess={play.chess}
-            snapshot={play.snapshot}
-            onMove={play.attemptMove}
-            orientation={orientation}
-          />
+          <div ref={boardNavRef} className="h-full w-full">
+            <ChessBoard
+              mode="play"
+              chess={play.chess}
+              snapshot={play.snapshot}
+              onMove={play.attemptMove}
+              orientation={orientation}
+            />
+          </div>
         </BoardFrame>
+        <MoveNavigationHints />
+        <MoveNavigationBindings
+          navigation={play.navigation}
+          enabled={play.pendingPromotion === null}
+          wheelTargetRef={boardNavRef}
+        />
 
         <div className="mt-3 flex shrink-0 justify-center lg:hidden">
           <PlayControls

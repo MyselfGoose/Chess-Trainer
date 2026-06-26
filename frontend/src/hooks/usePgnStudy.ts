@@ -19,6 +19,15 @@ import type {
   StudyNode,
 } from "@/lib/pgn";
 import {
+  canNavigateBack,
+  canNavigateForward,
+  canNavigateToEnd,
+  canNavigateToStart,
+  getForwardNodeId,
+  resolveTipAfterNavigate,
+} from "@/lib/navigation/treeNavigation";
+import type { MoveNavigationHandlers } from "@/hooks/useMoveNavigation";
+import {
   getRepertoire,
   loadStudySession,
   saveStudySession,
@@ -60,6 +69,10 @@ export interface UsePgnStudyResult {
   selectedGameIndex: number;
   goToNode: (nodeId: string) => void;
   goBack: () => void;
+  goForward: () => void;
+  goToStart: () => void;
+  goToEnd: () => void;
+  navigation: MoveNavigationHandlers;
   selectChoice: (nodeId: string) => void;
   tryBoardMove: (
     from: Square,
@@ -74,12 +87,14 @@ export interface UsePgnStudyResult {
 interface StudyUiState {
   repertoire: Repertoire | null;
   currentNodeId: string | null;
+  tipNodeId: string | null;
   selectedGameIndex: number;
 }
 
 const EMPTY_STUDY_STATE: StudyUiState = {
   repertoire: null,
   currentNodeId: null,
+  tipNodeId: null,
   selectedGameIndex: 0,
 };
 
@@ -102,6 +117,7 @@ function readStudyState(repertoireId: string): StudyUiState {
   return {
     repertoire,
     currentNodeId,
+    tipNodeId: currentNodeId,
     selectedGameIndex: gameIndex,
   };
 }
@@ -120,7 +136,7 @@ function persistSession(
 export function usePgnStudy(repertoireId: string): UsePgnStudyResult {
   const [uiState, setUiState] = useState<StudyUiState>(EMPTY_STUDY_STATE);
   const [isHydrated, setIsHydrated] = useState(false);
-  const { repertoire, currentNodeId, selectedGameIndex } = uiState;
+  const { repertoire, currentNodeId, tipNodeId, selectedGameIndex } = uiState;
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is client-only
@@ -197,28 +213,59 @@ export function usePgnStudy(repertoireId: string): UsePgnStudyResult {
     return !isRoot && availableMoves.length === 0;
   }, [availableMoves.length, currentGame, currentNode]);
 
-  const goToNode = useCallback(
+  const navigateToNode = useCallback(
     (nodeId: string) => {
       if (!currentGame || !getNode(currentGame, nodeId)) {
         return;
       }
       setUiState((prev) => {
+        const resolvedTip = prev.tipNodeId
+          ? resolveTipAfterNavigate(currentGame, prev.tipNodeId, nodeId)
+          : nodeId;
         persistSession(repertoireId, nodeId, prev.selectedGameIndex);
-        return { ...prev, currentNodeId: nodeId };
+        return {
+          ...prev,
+          currentNodeId: nodeId,
+          tipNodeId: resolvedTip,
+        };
       });
     },
     [currentGame, repertoireId],
   );
 
+  const goToNode = navigateToNode;
+
   const goBack = useCallback(() => {
-    if (!currentNode?.parentId) {
+    if (!currentGame || !currentNode?.parentId) {
       return;
     }
-    setUiState((prev) => {
-      persistSession(repertoireId, currentNode.parentId, prev.selectedGameIndex);
-      return { ...prev, currentNodeId: currentNode.parentId };
-    });
-  }, [currentNode, repertoireId]);
+    navigateToNode(currentNode.parentId);
+  }, [currentGame, currentNode, navigateToNode]);
+
+  const goForward = useCallback(() => {
+    if (!currentGame || !currentNodeId || !tipNodeId) {
+      return;
+    }
+    const nextId = getForwardNodeId(currentGame, currentNodeId, tipNodeId);
+    if (!nextId) {
+      return;
+    }
+    navigateToNode(nextId);
+  }, [currentGame, currentNodeId, navigateToNode, tipNodeId]);
+
+  const goToStart = useCallback(() => {
+    if (!currentGame) {
+      return;
+    }
+    navigateToNode(currentGame.rootId);
+  }, [currentGame, navigateToNode]);
+
+  const goToEnd = useCallback(() => {
+    if (!currentGame || !tipNodeId) {
+      return;
+    }
+    navigateToNode(tipNodeId);
+  }, [currentGame, navigateToNode, tipNodeId]);
 
   const selectChoice = goToNode;
 
@@ -240,8 +287,15 @@ export function usePgnStudy(repertoireId: string): UsePgnStudyResult {
       }
 
       setUiState((prev) => {
+        const resolvedTip = prev.tipNodeId
+          ? resolveTipAfterNavigate(currentGame, prev.tipNodeId, matched.id)
+          : matched.id;
         persistSession(repertoireId, matched.id, prev.selectedGameIndex);
-        return { ...prev, currentNodeId: matched.id };
+        return {
+          ...prev,
+          currentNodeId: matched.id,
+          tipNodeId: resolvedTip,
+        };
       });
       return true;
     },
@@ -270,10 +324,45 @@ export function usePgnStudy(repertoireId: string): UsePgnStudyResult {
         ...prev,
         selectedGameIndex: index,
         currentNodeId: rootId,
+        tipNodeId: rootId,
       }));
     },
     [repertoire, repertoireId],
   );
+
+  const navigation = useMemo((): MoveNavigationHandlers => {
+    if (!currentGame || !currentNodeId || !tipNodeId) {
+      return {
+        goBack,
+        goForward,
+        goToStart,
+        goToEnd,
+        canGoBack: false,
+        canGoForward: false,
+        canGoToStart: false,
+        canGoToEnd: false,
+      };
+    }
+
+    return {
+      goBack,
+      goForward,
+      goToStart,
+      goToEnd,
+      canGoBack: canNavigateBack(currentGame, currentNodeId),
+      canGoForward: canNavigateForward(currentGame, currentNodeId, tipNodeId),
+      canGoToStart: canNavigateToStart(currentGame, currentNodeId),
+      canGoToEnd: canNavigateToEnd(currentGame, currentNodeId, tipNodeId),
+    };
+  }, [
+    currentGame,
+    currentNodeId,
+    goBack,
+    goForward,
+    goToEnd,
+    goToStart,
+    tipNodeId,
+  ]);
 
   return {
     repertoire,
@@ -294,6 +383,10 @@ export function usePgnStudy(repertoireId: string): UsePgnStudyResult {
     selectedGameIndex,
     goToNode,
     goBack,
+    goForward,
+    goToStart,
+    goToEnd,
+    navigation,
     selectChoice,
     tryBoardMove,
     needsPromotion,
