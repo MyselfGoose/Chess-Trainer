@@ -29,6 +29,7 @@ export function ChessBoard({
   orientation = "white",
   className,
 }: ChessBoardProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const apiRef = useRef<Api | null>(null);
   const onMoveRef = useRef(onMove);
@@ -41,7 +42,8 @@ export function ChessBoard({
 
   useEffect(() => {
     const element = boardRef.current;
-    if (!element) {
+    const container = containerRef.current;
+    if (!element || !container) {
       return;
     }
 
@@ -59,6 +61,7 @@ export function ChessBoard({
       highlight: { lastMove: true, check: true },
       draggable: { enabled: true, showGhost: true },
       selectable: { enabled: true },
+      addDimensionsCssVarsTo: container,
       movable: {
         free: false,
         color: turnColor,
@@ -109,10 +112,10 @@ export function ChessBoard({
 
   return (
     <div
-      className={className}
-      style={{ width: "100%", aspectRatio: "1 / 1" }}
+      ref={containerRef}
+      className={`chess-board-container ${className ?? ""}`}
     >
-      <div ref={boardRef} style={{ width: "100%", height: "100%" }} />
+      <div ref={boardRef} className="chess-board-host" />
     </div>
   );
 }

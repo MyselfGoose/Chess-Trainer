@@ -46,7 +46,7 @@ export default function BoardPage() {
         </header>
 
         <div className="w-full max-w-[min(100%,560px)]">
-          <div className="overflow-hidden rounded-sm shadow-lg ring-1 ring-black/10">
+          <div className="rounded-sm p-1 shadow-lg ring-1 ring-black/10">
             <ChessBoard
               chess={chess}
               snapshot={snapshot}
