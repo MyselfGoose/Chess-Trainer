@@ -22,7 +22,7 @@ interface PgnStudyPanelProps {
   onSelectNode: (nodeId: string) => void;
   onSelectChoice: (nodeId: string) => void;
   onBack: () => void;
-  onClear: () => void;
+  repertoireName?: string;
 }
 
 export function PgnStudyPanel({
@@ -39,7 +39,7 @@ export function PgnStudyPanel({
   onSelectNode,
   onSelectChoice,
   onBack,
-  onClear,
+  repertoireName,
 }: PgnStudyPanelProps) {
   const currentNode = currentNodeId ? currentGame.nodes[currentNodeId] : null;
   const canGoBack = Boolean(currentNode?.parentId);
@@ -49,15 +49,14 @@ export function PgnStudyPanel({
     <aside className="flex h-full w-full min-w-0 flex-col gap-3 overflow-hidden p-4">
       <div className="flex min-w-0 items-center justify-between gap-2">
         <h2 className="truncate text-lg font-semibold text-zinc-900">
-          Repertoire
+          {repertoireName ?? "Repertoire"}
         </h2>
-        <button
-          type="button"
-          onClick={onClear}
-          className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-800"
+        <a
+          href="/repertoires"
+          className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-green-700 transition hover:bg-green-50"
         >
-          Clear study
-        </button>
+          All repertoires
+        </a>
       </div>
 
       <div className="min-w-0">

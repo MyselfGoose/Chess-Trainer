@@ -8,20 +8,22 @@ import type { PromotionPiece } from "@/lib/chess/types";
 import {
   buildRepertoireDests,
   choiceRequiresPromotion,
-  clearStudy,
   computeLineStats,
   findChoiceByMove,
   getMoveChoices,
-  loadStudy,
-  saveStudy,
 } from "@/lib/pgn";
 import type {
   LineStats,
   MoveChoice,
-  StoredPgnStudy,
   StudyGame,
   StudyNode,
 } from "@/lib/pgn";
+import {
+  getRepertoire,
+  loadStudySession,
+  saveStudySession,
+  type Repertoire,
+} from "@/lib/repertoires";
 
 function getNode(game: StudyGame, id: string): StudyNode | undefined {
   return game.nodes[id];
@@ -41,7 +43,7 @@ function buildPath(game: StudyGame, nodeId: string): StudyNode[] {
 }
 
 export interface UsePgnStudyResult {
-  study: StoredPgnStudy | null;
+  repertoire: Repertoire | null;
   currentGame: StudyGame | null;
   currentNode: StudyNode | null;
   currentNodeId: string | null;
@@ -55,6 +57,7 @@ export interface UsePgnStudyResult {
   isAtLineEnd: boolean;
   hasStudy: boolean;
   isHydrated: boolean;
+  selectedGameIndex: number;
   goToNode: (nodeId: string) => void;
   goBack: () => void;
   selectChoice: (nodeId: string) => void;
@@ -65,50 +68,76 @@ export interface UsePgnStudyResult {
   ) => boolean;
   needsPromotion: (from: Square, to: Square) => boolean;
   selectGame: (index: number) => void;
-  clearStudyData: () => void;
   reloadStudy: () => void;
 }
 
 interface StudyUiState {
-  study: StoredPgnStudy | null;
+  repertoire: Repertoire | null;
   currentNodeId: string | null;
+  selectedGameIndex: number;
 }
 
 const EMPTY_STUDY_STATE: StudyUiState = {
-  study: null,
+  repertoire: null,
   currentNodeId: null,
+  selectedGameIndex: 0,
 };
 
-function readStudyFromSession(): StudyUiState {
-  const loaded = loadStudy();
+function readStudyState(repertoireId: string): StudyUiState {
+  const repertoire = getRepertoire(repertoireId);
+  if (!repertoire || repertoire.games.length === 0) {
+    return { ...EMPTY_STUDY_STATE };
+  }
+
+  const session = loadStudySession(repertoireId);
+  const gameIndex = session?.selectedGameIndex ?? 0;
+  const game = repertoire.games[gameIndex] ?? repertoire.games[0];
+  const defaultNodeId = game.rootId;
+  const sessionNodeId = session?.currentNodeId;
+  const currentNodeId =
+    sessionNodeId && game.nodes[sessionNodeId]
+      ? sessionNodeId
+      : defaultNodeId;
+
   return {
-    study: loaded,
-    currentNodeId: loaded?.games[loaded.selectedGameIndex]?.rootId ?? null,
+    repertoire,
+    currentNodeId,
+    selectedGameIndex: gameIndex,
   };
 }
 
-export function usePgnStudy(): UsePgnStudyResult {
+function persistSession(
+  repertoireId: string,
+  currentNodeId: string | null,
+  selectedGameIndex: number,
+): void {
+  if (!currentNodeId) {
+    return;
+  }
+  saveStudySession(repertoireId, { currentNodeId, selectedGameIndex });
+}
+
+export function usePgnStudy(repertoireId: string): UsePgnStudyResult {
   const [uiState, setUiState] = useState<StudyUiState>(EMPTY_STUDY_STATE);
   const [isHydrated, setIsHydrated] = useState(false);
-  const { study, currentNodeId } = uiState;
+  const { repertoire, currentNodeId, selectedGameIndex } = uiState;
 
   useEffect(() => {
-    // Hydration-safe: server and first client paint both use EMPTY_STUDY_STATE.
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- sessionStorage is client-only
-    setUiState(readStudyFromSession());
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is client-only
+    setUiState(readStudyState(repertoireId));
     setIsHydrated(true);
-  }, []);
+  }, [repertoireId]);
 
   const reloadStudy = useCallback(() => {
-    setUiState(readStudyFromSession());
-  }, []);
+    setUiState(readStudyState(repertoireId));
+  }, [repertoireId]);
 
   const currentGame = useMemo(() => {
-    if (!study) {
+    if (!repertoire) {
       return null;
     }
-    return study.games[study.selectedGameIndex] ?? null;
-  }, [study]);
+    return repertoire.games[selectedGameIndex] ?? null;
+  }, [repertoire, selectedGameIndex]);
 
   const currentNode = useMemo(() => {
     if (!currentGame || !currentNodeId) {
@@ -173,17 +202,23 @@ export function usePgnStudy(): UsePgnStudyResult {
       if (!currentGame || !getNode(currentGame, nodeId)) {
         return;
       }
-      setUiState((prev) => ({ ...prev, currentNodeId: nodeId }));
+      setUiState((prev) => {
+        persistSession(repertoireId, nodeId, prev.selectedGameIndex);
+        return { ...prev, currentNodeId: nodeId };
+      });
     },
-    [currentGame],
+    [currentGame, repertoireId],
   );
 
   const goBack = useCallback(() => {
     if (!currentNode?.parentId) {
       return;
     }
-    setUiState((prev) => ({ ...prev, currentNodeId: currentNode.parentId }));
-  }, [currentNode]);
+    setUiState((prev) => {
+      persistSession(repertoireId, currentNode.parentId, prev.selectedGameIndex);
+      return { ...prev, currentNodeId: currentNode.parentId };
+    });
+  }, [currentNode, repertoireId]);
 
   const selectChoice = goToNode;
 
@@ -204,10 +239,13 @@ export function usePgnStudy(): UsePgnStudyResult {
         return false;
       }
 
-      setUiState((prev) => ({ ...prev, currentNodeId: matched.id }));
+      setUiState((prev) => {
+        persistSession(repertoireId, matched.id, prev.selectedGameIndex);
+        return { ...prev, currentNodeId: matched.id };
+      });
       return true;
     },
-    [currentGame, currentNodeId],
+    [currentGame, currentNodeId, repertoireId],
   );
 
   const needsPromotion = useCallback(
@@ -222,26 +260,23 @@ export function usePgnStudy(): UsePgnStudyResult {
 
   const selectGame = useCallback(
     (index: number) => {
-      if (!study || index < 0 || index >= study.games.length) {
+      if (!repertoire || index < 0 || index >= repertoire.games.length) {
         return;
       }
-      const updated: StoredPgnStudy = { ...study, selectedGameIndex: index };
-      saveStudy(updated);
-      setUiState({
-        study: updated,
-        currentNodeId: updated.games[index].rootId,
-      });
+      const game = repertoire.games[index];
+      const rootId = game.rootId;
+      persistSession(repertoireId, rootId, index);
+      setUiState((prev) => ({
+        ...prev,
+        selectedGameIndex: index,
+        currentNodeId: rootId,
+      }));
     },
-    [study],
+    [repertoire, repertoireId],
   );
 
-  const clearStudyData = useCallback(() => {
-    clearStudy();
-    setUiState({ study: null, currentNodeId: null });
-  }, []);
-
   return {
-    study,
+    repertoire,
     currentGame,
     currentNode,
     currentNodeId,
@@ -253,15 +288,16 @@ export function usePgnStudy(): UsePgnStudyResult {
     boardLastMove,
     turnLabel,
     isAtLineEnd,
-    hasStudy: isHydrated && study !== null && study.games.length > 0,
+    hasStudy:
+      isHydrated && repertoire !== null && repertoire.games.length > 0,
     isHydrated,
+    selectedGameIndex,
     goToNode,
     goBack,
     selectChoice,
     tryBoardMove,
     needsPromotion,
     selectGame,
-    clearStudyData,
     reloadStudy,
   };
 }

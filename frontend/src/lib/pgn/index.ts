@@ -11,6 +11,7 @@ export {
 } from "./navigation";
 export type { MoveChoice } from "./navigation";
 export { computeLineStats, countLeavesFrom } from "./stats";
+export { repertoireToPgn, studyGameToPgn, downloadPgnFile } from "./export";
 export type {
   LineStats,
   PgnParseIssue,
