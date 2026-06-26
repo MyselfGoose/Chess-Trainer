@@ -1,12 +1,20 @@
 "use client";
 
 import Link from "next/link";
+import { useCallback, useState } from "react";
+import type { Square } from "chess.js";
 
 import { ChessBoard } from "@/components/chess/ChessBoard";
 import { PromotionDialog } from "@/components/chess/PromotionDialog";
 import { PgnStudyPanel } from "@/components/pgn/PgnStudyPanel";
+import type { PromotionPiece } from "@/lib/chess/types";
 import { useChessGame } from "@/hooks/useChessGame";
 import { usePgnStudy } from "@/hooks/usePgnStudy";
+
+interface StudyPendingPromotion {
+  from: Square;
+  to: Square;
+}
 
 function formatResult(
   result: ReturnType<typeof useChessGame>["snapshot"]["result"],
@@ -28,23 +36,55 @@ function formatResult(
 export default function BoardPage() {
   const study = usePgnStudy();
   const play = useChessGame();
+  const [studyPromotion, setStudyPromotion] =
+    useState<StudyPendingPromotion | null>(null);
+
+  const handleStudyMove = useCallback(
+    (from: Square, to: Square): boolean => {
+      if (study.needsPromotion(from, to)) {
+        setStudyPromotion({ from, to });
+        return false;
+      }
+      return study.tryBoardMove(from, to);
+    },
+    [study],
+  );
+
+  const completeStudyPromotion = useCallback(
+    (piece: PromotionPiece) => {
+      if (!studyPromotion) {
+        return;
+      }
+      study.tryBoardMove(
+        studyPromotion.from,
+        studyPromotion.to,
+        piece,
+      );
+      setStudyPromotion(null);
+    },
+    [study, studyPromotion],
+  );
+
+  const cancelStudyPromotion = useCallback(() => {
+    setStudyPromotion(null);
+  }, []);
 
   const resultMessage = formatResult(play.snapshot.result);
   const turnLabel = play.snapshot.turn === "white" ? "White" : "Black";
+  const studyTurnColor =
+    study.turnLabel === "White" ? "white" : "black";
 
   if (study.hasStudy && study.study && study.currentGame && study.lineStats) {
     return (
       <div className="min-h-screen bg-zinc-100">
-        <div className="mx-auto flex min-h-screen max-w-7xl flex-col gap-6 px-4 py-6 lg:flex-row lg:py-8">
+        <div className="mx-auto flex min-h-screen max-w-7xl flex-col gap-6 px-4 py-6 lg:flex-row lg:items-start lg:py-8">
           <div className="flex shrink-0 flex-col items-center gap-4 lg:w-[min(100%,560px)]">
             <header className="w-full text-center lg:text-left">
               <h1 className="text-2xl font-semibold text-zinc-900">
                 Study mode
               </h1>
               <p className="mt-1 text-sm text-zinc-600">
-                {study.study.fileName
-                  ? `Studying ${study.study.fileName}`
-                  : "Navigate moves in the sidebar"}
+                Choose your next move from the repertoire
               </p>
             </header>
 
@@ -54,6 +94,8 @@ export default function BoardPage() {
                   mode="study"
                   fen={study.boardFen}
                   lastMove={study.boardLastMove}
+                  repertoireDests={study.repertoireDests}
+                  onRepertoireMove={handleStudyMove}
                 />
               </div>
             </div>
@@ -73,15 +115,26 @@ export default function BoardPage() {
               currentGame={study.currentGame}
               currentNodeId={study.currentNodeId}
               currentPath={study.currentPath}
+              availableMoves={study.availableMoves}
+              turnLabel={study.turnLabel}
+              isAtLineEnd={study.isAtLineEnd}
               lineStats={study.lineStats}
               onSelectGame={study.selectGame}
               onSelectNode={study.goToNode}
-              onPrev={study.goPrev}
-              onNext={study.goNext}
+              onSelectChoice={study.selectChoice}
+              onBack={study.goBack}
               onClear={study.clearStudyData}
             />
           </div>
         </div>
+
+        {studyPromotion ? (
+          <PromotionDialog
+            color={studyTurnColor}
+            onSelect={completeStudyPromotion}
+            onCancel={cancelStudyPromotion}
+          />
+        ) : null}
       </div>
     );
   }

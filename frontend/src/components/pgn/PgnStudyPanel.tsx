@@ -1,12 +1,12 @@
 "use client";
 
-import type { LineStats, StudyGame, StudyNode } from "@/lib/pgn";
+import type { LineStats, MoveChoice, StudyGame, StudyNode } from "@/lib/pgn";
 
-import { PgnBreadcrumb } from "./PgnBreadcrumb";
 import { PgnGameSelector } from "./PgnGameSelector";
 import { PgnHeadersCard } from "./PgnHeadersCard";
 import { PgnLineStats } from "./PgnLineStats";
-import { PgnMoveTreeRoot } from "./PgnMoveTree";
+import { PgnMoveChoices } from "./PgnMoveChoices";
+import { PgnPathBar } from "./PgnPathBar";
 
 interface PgnStudyPanelProps {
   games: StudyGame[];
@@ -14,11 +14,14 @@ interface PgnStudyPanelProps {
   currentGame: StudyGame;
   currentNodeId: string | null;
   currentPath: StudyNode[];
+  availableMoves: MoveChoice[];
+  turnLabel: string;
+  isAtLineEnd: boolean;
   lineStats: LineStats;
   onSelectGame: (index: number) => void;
   onSelectNode: (nodeId: string) => void;
-  onPrev: () => void;
-  onNext: () => void;
+  onSelectChoice: (nodeId: string) => void;
+  onBack: () => void;
   onClear: () => void;
 }
 
@@ -28,21 +31,24 @@ export function PgnStudyPanel({
   currentGame,
   currentNodeId,
   currentPath,
+  availableMoves,
+  turnLabel,
+  isAtLineEnd,
   lineStats,
   onSelectGame,
   onSelectNode,
-  onPrev,
-  onNext,
+  onSelectChoice,
+  onBack,
   onClear,
 }: PgnStudyPanelProps) {
   const currentNode = currentNodeId ? currentGame.nodes[currentNodeId] : null;
-  const canGoPrev = Boolean(currentNode?.parentId);
-  const canGoNext = Boolean(currentNode && currentNode.childIds.length > 0);
+  const canGoBack = Boolean(currentNode?.parentId);
+  const isAtRoot = currentNode?.id === currentGame.rootId;
 
   return (
-    <div className="flex h-full flex-col gap-4">
+    <div className="flex h-full max-h-[calc(100vh-3rem)] flex-col gap-4 lg:sticky lg:top-6">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold text-zinc-900">Study</h2>
+        <h2 className="text-lg font-semibold text-zinc-900">Repertoire</h2>
         <button
           type="button"
           onClick={onClear}
@@ -58,37 +64,41 @@ export function PgnStudyPanel({
         onSelect={onSelectGame}
       />
 
-      <PgnHeadersCard game={currentGame} />
-      <PgnLineStats stats={lineStats} />
+      <details className="rounded-lg bg-white ring-1 ring-zinc-200">
+        <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-zinc-700">
+          Game info & stats
+        </summary>
+        <div className="flex flex-col gap-3 border-t border-zinc-100 px-4 pb-4 pt-3">
+          <PgnHeadersCard game={currentGame} />
+          <PgnLineStats stats={lineStats} />
+        </div>
+      </details>
 
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={onPrev}
-          disabled={!canGoPrev}
-          className="flex-1 rounded-md bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          Prev
-        </button>
-        <button
-          type="button"
-          onClick={onNext}
-          disabled={!canGoNext}
-          className="flex-1 rounded-md bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          Next
-        </button>
-      </div>
-
-      <PgnBreadcrumb path={currentPath} />
+      <PgnPathBar
+        path={currentPath}
+        currentNodeId={currentNodeId}
+        onSelect={onSelectNode}
+      />
 
       <div className="min-h-0 flex-1 overflow-y-auto rounded-lg bg-white p-3 ring-1 ring-zinc-200">
-        <PgnMoveTreeRoot
-          game={currentGame}
+        <PgnMoveChoices
+          choices={availableMoves}
           currentNodeId={currentNodeId}
-          onSelect={onSelectNode}
+          turnLabel={turnLabel}
+          isAtLineEnd={isAtLineEnd}
+          isAtRoot={isAtRoot}
+          onSelect={onSelectChoice}
         />
       </div>
+
+      <button
+        type="button"
+        onClick={onBack}
+        disabled={!canGoBack}
+        className="w-full rounded-md bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        Back one move
+      </button>
     </div>
   );
 }

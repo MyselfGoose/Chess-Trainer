@@ -3,7 +3,14 @@ export { formatAnnotations, formatNag } from "./nags";
 export { parsePgnDatabase } from "./parse";
 export { notationToSan } from "./san";
 export { clearStudy, loadStudy, saveStudy, validatePgnSize } from "./storage";
-export { computeLineStats } from "./stats";
+export {
+  buildRepertoireDests,
+  choiceRequiresPromotion,
+  findChoiceByMove,
+  getMoveChoices,
+} from "./navigation";
+export type { MoveChoice } from "./navigation";
+export { computeLineStats, countLeavesFrom } from "./stats";
 export type {
   LineStats,
   PgnParseIssue,

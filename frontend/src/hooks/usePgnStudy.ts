@@ -1,15 +1,27 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { Chess } from "chess.js";
 import type { Square } from "chess.js";
 
+import type { PromotionPiece } from "@/lib/chess/types";
 import {
+  buildRepertoireDests,
+  choiceRequiresPromotion,
   clearStudy,
   computeLineStats,
+  findChoiceByMove,
+  getMoveChoices,
   loadStudy,
   saveStudy,
 } from "@/lib/pgn";
-import type { LineStats, StoredPgnStudy, StudyGame, StudyNode } from "@/lib/pgn";
+import type {
+  LineStats,
+  MoveChoice,
+  StoredPgnStudy,
+  StudyGame,
+  StudyNode,
+} from "@/lib/pgn";
 
 function getNode(game: StudyGame, id: string): StudyNode | undefined {
   return game.nodes[id];
@@ -34,13 +46,23 @@ export interface UsePgnStudyResult {
   currentNode: StudyNode | null;
   currentNodeId: string | null;
   currentPath: StudyNode[];
+  availableMoves: MoveChoice[];
+  repertoireDests: Map<Square, Square[]>;
   lineStats: LineStats | null;
   boardFen: string;
   boardLastMove: [Square, Square] | null;
+  turnLabel: string;
+  isAtLineEnd: boolean;
   hasStudy: boolean;
   goToNode: (nodeId: string) => void;
-  goPrev: () => void;
-  goNext: () => void;
+  goBack: () => void;
+  selectChoice: (nodeId: string) => void;
+  tryBoardMove: (
+    from: Square,
+    to: Square,
+    promotion?: PromotionPiece,
+  ) => boolean;
+  needsPromotion: (from: Square, to: Square) => boolean;
   selectGame: (index: number) => void;
   clearStudyData: () => void;
   reloadStudy: () => void;
@@ -92,6 +114,18 @@ export function usePgnStudy(): UsePgnStudyResult {
     return buildPath(currentGame, currentNodeId);
   }, [currentGame, currentNodeId]);
 
+  const availableMoves = useMemo(() => {
+    if (!currentGame || !currentNodeId) {
+      return [];
+    }
+    return getMoveChoices(currentGame, currentNodeId);
+  }, [currentGame, currentNodeId]);
+
+  const repertoireDests = useMemo(
+    () => buildRepertoireDests(availableMoves),
+    [availableMoves],
+  );
+
   const lineStats = useMemo(() => {
     if (!currentGame) {
       return null;
@@ -108,6 +142,22 @@ export function usePgnStudy(): UsePgnStudyResult {
     return [currentNode.from as Square, currentNode.to as Square];
   }, [currentNode]);
 
+  const turnLabel = useMemo(() => {
+    if (!boardFen) {
+      return "White";
+    }
+    const chess = new Chess(boardFen);
+    return chess.turn() === "w" ? "White" : "Black";
+  }, [boardFen]);
+
+  const isAtLineEnd = useMemo(() => {
+    if (!currentNode || !currentGame) {
+      return false;
+    }
+    const isRoot = currentNode.id === currentGame.rootId;
+    return !isRoot && availableMoves.length === 0;
+  }, [availableMoves.length, currentGame, currentNode]);
+
   const goToNode = useCallback(
     (nodeId: string) => {
       if (!currentGame || !getNode(currentGame, nodeId)) {
@@ -118,26 +168,47 @@ export function usePgnStudy(): UsePgnStudyResult {
     [currentGame],
   );
 
-  const goPrev = useCallback(() => {
+  const goBack = useCallback(() => {
     if (!currentNode?.parentId) {
       return;
     }
     setUiState((prev) => ({ ...prev, currentNodeId: currentNode.parentId }));
   }, [currentNode]);
 
-  const goNext = useCallback(() => {
-    if (!currentGame || !currentNode) {
-      return;
-    }
-    const mainChildId = currentNode.childIds.find((childId) => {
-      const child = getNode(currentGame, childId);
-      return child && !child.isVariation;
-    });
-    const nextId = mainChildId ?? currentNode.childIds[0];
-    if (nextId) {
-      setUiState((prev) => ({ ...prev, currentNodeId: nextId }));
-    }
-  }, [currentGame, currentNode]);
+  const selectChoice = goToNode;
+
+  const tryBoardMove = useCallback(
+    (from: Square, to: Square, promotion?: PromotionPiece): boolean => {
+      if (!currentGame || !currentNodeId) {
+        return false;
+      }
+
+      const matched = findChoiceByMove(
+        currentGame,
+        currentNodeId,
+        from,
+        to,
+        promotion,
+      );
+      if (!matched) {
+        return false;
+      }
+
+      setUiState((prev) => ({ ...prev, currentNodeId: matched.id }));
+      return true;
+    },
+    [currentGame, currentNodeId],
+  );
+
+  const needsPromotion = useCallback(
+    (from: Square, to: Square): boolean => {
+      if (!currentGame || !currentNodeId) {
+        return false;
+      }
+      return choiceRequiresPromotion(currentGame, currentNodeId, from, to);
+    },
+    [currentGame, currentNodeId],
+  );
 
   const selectGame = useCallback(
     (index: number) => {
@@ -165,13 +236,19 @@ export function usePgnStudy(): UsePgnStudyResult {
     currentNode,
     currentNodeId,
     currentPath,
+    availableMoves,
+    repertoireDests,
     lineStats,
     boardFen,
     boardLastMove,
+    turnLabel,
+    isAtLineEnd,
     hasStudy: study !== null && study.games.length > 0,
     goToNode,
-    goPrev,
-    goNext,
+    goBack,
+    selectChoice,
+    tryBoardMove,
+    needsPromotion,
     selectGame,
     clearStudyData,
     reloadStudy,

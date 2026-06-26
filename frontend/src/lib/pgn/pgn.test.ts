@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
+import type { Square } from "chess.js";
 
-import { computeLineStats } from "./stats";
+import { findChoiceByMove, getMoveChoices } from "./navigation";
 import { parsePgnDatabase } from "./parse";
+import { computeLineStats } from "./stats";
 
 const SIMPLE_PGN = `[Event "Test Game"]
 [White "Alice"]
@@ -96,5 +98,50 @@ describe("computeLineStats", () => {
     const stats = computeLineStats(result.games[0]);
     expect(stats.lineCount).toBe(3);
     expect(stats.totalMoves).toBeGreaterThan(6);
+  });
+});
+
+describe("getMoveChoices", () => {
+  it("returns sibling moves at a branched position", () => {
+    const result = parsePgnDatabase(VARIATION_PGN);
+    const game = result.games[0];
+
+    const e4Node = getMoveChoices(game, game.rootId).find(
+      (choice) => choice.node.san === "e4",
+    )?.node;
+    expect(e4Node).toBeDefined();
+
+    const afterE4 = getMoveChoices(game, e4Node!.id);
+    expect(afterE4.length).toBe(2);
+    expect(afterE4.map((choice) => choice.node.san).sort()).toEqual(["c5", "e5"]);
+  });
+
+  it("sorts main line before variations", () => {
+    const result = parsePgnDatabase(VARIATION_PGN);
+    const game = result.games[0];
+
+    const e4Node = getMoveChoices(game, game.rootId)[0].node;
+    const afterE4 = getMoveChoices(game, e4Node.id);
+
+    expect(afterE4[0].isMainLine).toBe(true);
+    expect(afterE4[0].node.san).toBe("e5");
+    expect(afterE4[1].isMainLine).toBe(false);
+    expect(afterE4[1].node.san).toBe("c5");
+  });
+
+  it("findChoiceByMove resolves the correct child", () => {
+    const result = parsePgnDatabase(VARIATION_PGN);
+    const game = result.games[0];
+
+    const e4Node = getMoveChoices(game, game.rootId)[0].node;
+    const matched = findChoiceByMove(
+      game,
+      e4Node.id,
+      "c7" as Square,
+      "c5" as Square,
+    );
+
+    expect(matched?.san).toBe("c5");
+    expect(matched?.isVariation).toBe(true);
   });
 });

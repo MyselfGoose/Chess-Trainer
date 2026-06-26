@@ -4,13 +4,13 @@ function getNode(game: StudyGame, id: string): StudyNode | undefined {
   return game.nodes[id];
 }
 
-function countLeaves(game: StudyGame, nodeId: string): number {
+export function countLeavesFrom(game: StudyGame, nodeId: string): number {
   const node = getNode(game, nodeId);
   if (!node || node.childIds.length === 0) {
     return 1;
   }
   return node.childIds.reduce(
-    (sum, childId) => sum + countLeaves(game, childId),
+    (sum, childId) => sum + countLeavesFrom(game, childId),
     0,
   );
 }
@@ -42,7 +42,7 @@ export function computeLineStats(game: StudyGame): LineStats {
   const variationCount = moveNodes.filter((node) => node.isVariation).length;
 
   return {
-    lineCount: countLeaves(game, game.rootId),
+    lineCount: countLeavesFrom(game, game.rootId),
     maxDepth: maxDepthFrom(game, game.rootId, 0),
     totalMoves: moveNodes.length,
     variationCount,

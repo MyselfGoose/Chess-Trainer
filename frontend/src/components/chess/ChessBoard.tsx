@@ -24,6 +24,8 @@ type StudyModeProps = {
   mode: "study";
   fen: string;
   lastMove?: [Square, Square] | null;
+  repertoireDests?: Map<Square, Square[]>;
+  onRepertoireMove?: (from: Square, to: Square) => boolean;
   orientation?: "white" | "black";
   className?: string;
 };
@@ -44,13 +46,39 @@ function isInCheck(fen: string): boolean {
   return chess.inCheck();
 }
 
+function toChessgroundDests(
+  dests: Map<Square, Square[]> | undefined,
+): Map<Key, Key[]> {
+  const result = new Map<Key, Key[]>();
+  if (!dests) {
+    return result;
+  }
+  for (const [from, squares] of dests) {
+    result.set(from as Key, squares.map((square) => square as Key));
+  }
+  return result;
+}
+
+function hasRepertoireMoves(
+  dests: Map<Square, Square[]> | undefined,
+): boolean {
+  if (!dests) {
+    return false;
+  }
+  return dests.size > 0;
+}
+
 export function ChessBoard(props: ChessBoardProps) {
   const { orientation = "white", className } = props;
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const apiRef = useRef<Api | null>(null);
   const onMoveRef = useRef(
-    props.mode === "play" ? props.onMove : () => false,
+    props.mode === "play"
+      ? props.onMove
+      : props.mode === "study" && props.onRepertoireMove
+        ? props.onRepertoireMove
+        : () => false,
   );
   const fenRef = useRef(props.mode === "play" ? props.snapshot.fen : props.fen);
 
@@ -60,6 +88,7 @@ export function ChessBoard(props: ChessBoardProps) {
       fenRef.current = props.snapshot.fen;
     } else {
       fenRef.current = props.fen;
+      onMoveRef.current = props.onRepertoireMove ?? (() => false);
     }
   });
 
@@ -73,6 +102,8 @@ export function ChessBoard(props: ChessBoardProps) {
     if (props.mode === "study") {
       const turnColor = toChessgroundColor(getTurnFromFen(props.fen));
       const inCheck = isInCheck(props.fen);
+      const canPlay = hasRepertoireMoves(props.repertoireDests);
+      const dests = toChessgroundDests(props.repertoireDests);
 
       const api = Chessground(element, {
         fen: props.fen,
@@ -83,11 +114,29 @@ export function ChessBoard(props: ChessBoardProps) {
         coordinates: true,
         animation: { enabled: true, duration: 200 },
         highlight: { lastMove: true, check: true },
-        viewOnly: true,
-        draggable: { enabled: false },
-        selectable: { enabled: false },
-        movable: { free: false, color: undefined, dests: new Map() },
+        viewOnly: !canPlay,
+        draggable: { enabled: canPlay, showGhost: canPlay },
+        selectable: { enabled: canPlay },
         addDimensionsCssVarsTo: container,
+        movable: canPlay
+          ? {
+              free: false,
+              color: turnColor,
+              dests,
+              showDests: true,
+              events: {
+                after: (orig: Key, dest: Key) => {
+                  const accepted = onMoveRef.current(
+                    orig as Square,
+                    dest as Square,
+                  );
+                  if (!accepted) {
+                    api.set({ fen: fenRef.current });
+                  }
+                },
+              },
+            }
+          : { free: false, color: undefined, dests: new Map() },
       });
 
       apiRef.current = api;
@@ -147,13 +196,25 @@ export function ChessBoard(props: ChessBoardProps) {
     if (props.mode === "study") {
       const turnColor = toChessgroundColor(getTurnFromFen(props.fen));
       const inCheck = isInCheck(props.fen);
+      const canPlay = hasRepertoireMoves(props.repertoireDests);
+      const dests = toChessgroundDests(props.repertoireDests);
+
       api.set({
         fen: props.fen,
         turnColor,
         check: inCheck ? turnColor : undefined,
         lastMove: props.lastMove ?? undefined,
-        viewOnly: true,
-        movable: { free: false, color: undefined, dests: new Map() },
+        viewOnly: !canPlay,
+        draggable: { enabled: canPlay, showGhost: canPlay },
+        selectable: { enabled: canPlay },
+        movable: canPlay
+          ? {
+              free: false,
+              color: turnColor,
+              dests,
+              showDests: true,
+            }
+          : { free: false, color: undefined, dests: new Map() },
       });
       return;
     }
