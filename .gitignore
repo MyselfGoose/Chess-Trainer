@@ -1,0 +1,177 @@
+# =============================================================================
+# Chess — repository-wide ignore rules
+# Applies recursively across frontend, backend, and future packages.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Dependencies
+# -----------------------------------------------------------------------------
+node_modules/
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+bower_components/
+jspm_packages/
+
+# -----------------------------------------------------------------------------
+# Environment & secrets (never commit credentials)
+# -----------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+!.env*.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+credentials.json
+service-account*.json
+
+# -----------------------------------------------------------------------------
+# Next.js / React / frontend build output
+# -----------------------------------------------------------------------------
+.next/
+out/
+build/
+dist/
+.turbo/
+.vercel/
+.swc/
+
+# -----------------------------------------------------------------------------
+# TypeScript / JavaScript tooling
+# -----------------------------------------------------------------------------
+*.tsbuildinfo
+next-env.d.ts
+.eslintcache
+.stylelintcache
+*.log
+
+# Package manager debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# -----------------------------------------------------------------------------
+# Testing & coverage
+# -----------------------------------------------------------------------------
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+playwright/.cache/
+blob-report/
+cypress/videos/
+cypress/screenshots/
+*.lcov
+
+# -----------------------------------------------------------------------------
+# Python (common for backends, engines, scripts)
+# -----------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+ENV/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+htmlcov/
+.tox/
+.nox/
+*.cover
+.hypothesis/
+pip-log.txt
+
+# -----------------------------------------------------------------------------
+# Rust / Go / other native tooling (future services)
+# -----------------------------------------------------------------------------
+target/
+vendor/
+*.exe
+*.dll
+*.dylib
+
+# -----------------------------------------------------------------------------
+# Databases & local data stores
+# -----------------------------------------------------------------------------
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+
+# -----------------------------------------------------------------------------
+# Docker & local infrastructure
+# -----------------------------------------------------------------------------
+docker-compose.override.yml
+.docker/
+
+# -----------------------------------------------------------------------------
+# IDE & editor
+# -----------------------------------------------------------------------------
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# -----------------------------------------------------------------------------
+# OS-generated files
+# -----------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# -----------------------------------------------------------------------------
+# Deployment & platform artifacts
+# -----------------------------------------------------------------------------
+.render/
+.netlify/
+.firebase/
+.serverless/
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+# -----------------------------------------------------------------------------
+# Archives & temporary files
+# -----------------------------------------------------------------------------
+*.tmp
+*.temp
+*.bak
+*.orig
+.cache/
+tmp/
+temp/
