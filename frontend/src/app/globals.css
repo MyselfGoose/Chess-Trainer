@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+@import "@lichess-org/chessground/assets/chessground.base.css";
+@import "../styles/chess/chessground.chesscom.css";
+@import "../styles/chess/chessground.cburnett.css";
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
