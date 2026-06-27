@@ -10,7 +10,12 @@ import type { Square } from "chess.js";
 
 import { AnnotationLayer } from "@/components/chess/AnnotationLayer";
 import { buildMovableDests } from "@/lib/chess/destinations";
-import type { BoardAnnotationsConfig } from "@/lib/chess/annotations";
+import {
+  CHESSGROUND_DRAW_BRUSHES,
+  drawShapesToAnnotations,
+  type BoardAnnotationsConfig,
+  type DragSession,
+} from "@/lib/chess/annotations";
 import type { ChessGame } from "@/lib/chess/game";
 import type { ChessGameSnapshot } from "@/lib/chess/types";
 import { useBoardAnnotations } from "@/hooks/useBoardAnnotations";
@@ -84,11 +89,33 @@ function hasRepertoireMoves(
   return dests.size > 0;
 }
 
+function createDrawableConfig(
+  enabled: boolean,
+  onChange: (shapes: DrawShape[]) => void,
+) {
+  if (!enabled) {
+    return DISABLED_DRAWABLE;
+  }
+  return {
+    enabled: true,
+    visible: false,
+    defaultSnapToValidMove: false,
+    eraseOnMovablePieceClick: false,
+    shapes: [] as DrawShape[],
+    autoShapes: [] as DrawShape[],
+    brushes: CHESSGROUND_DRAW_BRUSHES,
+    onChange,
+  };
+}
+
 export function ChessBoard(props: ChessBoardProps) {
   const { orientation = "white", className, annotations } = props;
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const apiRef = useRef<Api | null>(null);
+  const dragSessionRef = useRef<DragSession | null>(null);
+  const annotationsOnChangeRef = useRef(annotations?.onChange ?? (() => undefined));
+
   const onMoveRef = useRef(
     props.mode === "play"
       ? props.onMove
@@ -100,6 +127,18 @@ export function ChessBoard(props: ChessBoardProps) {
 
   const annotationsEnabled =
     annotations !== undefined && annotations.enabled !== false;
+
+  useEffect(() => {
+    annotationsOnChangeRef.current = annotations?.onChange ?? (() => undefined);
+  }, [annotations?.onChange]);
+
+  const handleDrawableChange = useCallback((shapes: DrawShape[]) => {
+    const session = dragSessionRef.current;
+    const converted = drawShapesToAnnotations(shapes, session);
+    dragSessionRef.current = null;
+    annotationsOnChangeRef.current(converted);
+    apiRef.current?.set({ drawable: { shapes: [], autoShapes: [] } });
+  }, []);
 
   const getSquareAtClientPos = useCallback(
     (clientX: number, clientY: number): Square | null => {
@@ -124,6 +163,7 @@ export function ChessBoard(props: ChessBoardProps) {
     shapes: annotations?.shapes ?? [],
     onChange: annotations?.onChange ?? (() => undefined),
     getSquareAtClientPos,
+    dragSessionRef,
   });
 
   const renderedAnnotations = useMemo(
@@ -154,7 +194,7 @@ export function ChessBoard(props: ChessBoardProps) {
       animation: { enabled: true, duration: 200 },
       highlight: { lastMove: true, check: true },
       addDimensionsCssVarsTo: container,
-      drawable: DISABLED_DRAWABLE,
+      drawable: createDrawableConfig(annotationsEnabled, handleDrawableChange),
       disableContextMenu: annotationsEnabled,
     };
 
@@ -236,7 +276,7 @@ export function ChessBoard(props: ChessBoardProps) {
       apiRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount once; sync via second effect
-  }, [annotationsEnabled, orientation, props.mode]);
+  }, [annotationsEnabled, handleDrawableChange, orientation, props.mode]);
 
   useEffect(() => {
     const root = boardRef.current;
@@ -258,6 +298,11 @@ export function ChessBoard(props: ChessBoardProps) {
       return;
     }
 
+    const drawable = createDrawableConfig(
+      annotationsEnabled,
+      handleDrawableChange,
+    );
+
     if (props.mode === "study") {
       const turnColor = toChessgroundColor(getTurnFromFen(props.fen));
       const inCheck = isInCheck(props.fen);
@@ -274,7 +319,7 @@ export function ChessBoard(props: ChessBoardProps) {
         draggable: { enabled: canPlay, showGhost: canPlay },
         selectable: { enabled: canPlay },
         disableContextMenu: annotationsEnabled,
-        drawable: DISABLED_DRAWABLE,
+        drawable,
         movable: canPlay
           ? {
               free: false,
@@ -299,14 +344,14 @@ export function ChessBoard(props: ChessBoardProps) {
       check: snapshot.inCheck ? turnColor : undefined,
       lastMove: snapshot.lastMove ?? undefined,
       disableContextMenu: annotationsEnabled,
-      drawable: DISABLED_DRAWABLE,
+      drawable,
       movable: {
         color: gameOver ? undefined : turnColor,
         dests: gameOver ? new Map() : buildMovableDests(engine),
         showDests: !gameOver,
       },
     });
-  }, [annotationsEnabled, orientation, props]);
+  }, [annotationsEnabled, handleDrawableChange, orientation, props]);
 
   return (
     <div

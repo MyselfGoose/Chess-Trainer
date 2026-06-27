@@ -7,13 +7,13 @@ import {
   annotationKey,
   arrowBrushFromModifiers,
   buildArrowPath,
+  createDragSession,
   getKeyAtClientPos,
-  sameAnnotation,
-  simplifyDragPath,
-  squareBrushFromModifiers,
+  updateDragSession,
   type AnnotationPreview,
   type BoardAnnotation,
   type BoardOrientation,
+  type DragSession,
 } from "@/lib/chess/annotations";
 
 function isRightButton(event: MouseEvent): boolean {
@@ -33,7 +33,7 @@ function getClientPosition(
   return { x: event.clientX, y: event.clientY };
 }
 
-export interface BoardAnnotationBindingOptions {
+export interface BoardAnnotationSupportOptions {
   boardEl: HTMLElement;
   orientationRef: React.RefObject<BoardOrientation>;
   shapesRef: React.RefObject<BoardAnnotation[]>;
@@ -42,63 +42,26 @@ export interface BoardAnnotationBindingOptions {
     ((clientX: number, clientY: number) => Square | null) | undefined
   >;
   boardRef: React.RefObject<HTMLElement | null>;
+  dragSessionRef: React.MutableRefObject<DragSession | null>;
   setPreview: (preview: AnnotationPreview | null) => void;
-  drawingRef: React.MutableRefObject<{
-    orig: Square;
-    path: Square[];
-    brush: ReturnType<typeof arrowBrushFromModifiers>;
-    moved: boolean;
-  } | null>;
 }
 
-export function attachBoardAnnotationListeners({
+export function attachBoardAnnotationSupport({
   boardEl,
   orientationRef,
   shapesRef,
   onChangeRef,
   getSquareRef,
   boardRef,
+  dragSessionRef,
   setPreview,
-  drawingRef,
-}: BoardAnnotationBindingOptions): () => void {
+}: BoardAnnotationSupportOptions): () => void {
   const clearAll = () => {
     if (shapesRef.current.length === 0) {
       return;
     }
     onChangeRef.current([]);
     setPreview(null);
-  };
-
-  const commitSquareHighlight = (
-    square: Square,
-    event: MouseEvent | TouchEvent,
-  ) => {
-    const brush = squareBrushFromModifiers(event);
-    const annotation: BoardAnnotation = { type: "square", square, brush };
-    const existing = shapesRef.current.find((shape) =>
-      sameAnnotation(shape, annotation),
-    );
-    const next = existing
-      ? shapesRef.current.filter((shape) => !sameAnnotation(shape, annotation))
-      : [...shapesRef.current, annotation];
-    onChangeRef.current(next);
-  };
-
-  const commitArrow = (
-    orig: Square,
-    dest: Square,
-    dragPath: Square[],
-    brush: ReturnType<typeof arrowBrushFromModifiers>,
-  ) => {
-    const path = buildArrowPath(orig, dest, dragPath);
-    const annotation: BoardAnnotation = { type: "arrow", path, brush };
-    const existing = shapesRef.current.find((shape) =>
-      sameAnnotation(shape, annotation),
-    );
-    const next = existing
-      ? shapesRef.current.filter((shape) => !sameAnnotation(shape, annotation))
-      : [...shapesRef.current, annotation];
-    onChangeRef.current(next);
   };
 
   const resolveSquare = (clientX: number, clientY: number): Square | null => {
@@ -127,103 +90,34 @@ export function attachBoardAnnotationListeners({
     );
   };
 
-  const handleContextMenu = (event: Event) => {
-    event.preventDefault();
-  };
-
-  const startDraw = (event: MouseEvent | TouchEvent) => {
-    const pos = getClientPosition(event);
-    if (!pos) {
+  const updatePreview = (
+    session: DragSession,
+    event: MouseEvent | TouchEvent,
+  ) => {
+    if (session.dest === session.orig) {
+      setPreview(null);
       return;
     }
-
-    const square = resolveSquare(pos.x, pos.y);
-    if (!square) {
-      return;
-    }
-
-    event.preventDefault();
-    event.stopPropagation();
-
-    drawingRef.current = {
-      orig: square,
-      path: [square],
-      brush: arrowBrushFromModifiers(event),
-      moved: false,
-    };
-    setPreview(null);
-  };
-
-  const moveDraw = (event: MouseEvent | TouchEvent) => {
-    const drawing = drawingRef.current;
-    if (!drawing) {
-      return;
-    }
-
-    const pos = getClientPosition(event);
-    if (!pos) {
-      return;
-    }
-
-    const square = resolveSquare(pos.x, pos.y);
-    if (!square) {
-      return;
-    }
-
-    if ("cancelable" in event && event.cancelable) {
-      event.preventDefault();
-    }
-
-    const last = drawing.path[drawing.path.length - 1];
-    if (square !== last) {
-      drawing.moved = true;
-      drawing.path.push(square);
-    }
-
-    const simplified = simplifyDragPath(drawing.path);
-    const dest = simplified[simplified.length - 1]!;
-    const path =
-      simplified.length >= 2
-        ? buildArrowPath(drawing.orig, dest, simplified)
-        : simplified;
 
     setPreview({
       type: "arrow",
-      path,
-      brush: drawing.brush,
+      path: buildArrowPath(session.orig, session.dest, session.visited),
+      brush: arrowBrushFromModifiers(event),
     });
-  };
-
-  const endDraw = (event: MouseEvent | TouchEvent) => {
-    const drawing = drawingRef.current;
-    if (!drawing) {
-      return;
-    }
-
-    drawingRef.current = null;
-    setPreview(null);
-
-    const pos = getClientPosition(event);
-    const square =
-      pos !== null
-        ? resolveSquare(pos.x, pos.y)
-        : drawing.path[drawing.path.length - 1]!;
-
-    if (!drawing.moved) {
-      commitSquareHighlight(drawing.orig, event);
-      return;
-    }
-
-    if (!square || square === drawing.orig) {
-      return;
-    }
-
-    commitArrow(drawing.orig, square, drawing.path, drawing.brush);
   };
 
   const handleMouseDown = (event: MouseEvent) => {
     if (isRightButton(event)) {
-      startDraw(event);
+      const pos = getClientPosition(event);
+      if (!pos) {
+        return;
+      }
+      const square = resolveSquare(pos.x, pos.y);
+      if (!square) {
+        return;
+      }
+      dragSessionRef.current = createDragSession(square);
+      setPreview(null);
       return;
     }
     if (event.button === 0) {
@@ -232,42 +126,77 @@ export function attachBoardAnnotationListeners({
   };
 
   const handleMouseMove = (event: MouseEvent) => {
-    if (drawingRef.current) {
-      moveDraw(event);
+    const session = dragSessionRef.current;
+    if (!session) {
+      return;
+    }
+
+    const pos = getClientPosition(event);
+    if (!pos) {
+      return;
+    }
+
+    const square = resolveSquare(pos.x, pos.y);
+    if (!square) {
+      return;
+    }
+
+    const next = updateDragSession(session, square);
+    if (next !== session) {
+      dragSessionRef.current = next;
+      updatePreview(next, event);
     }
   };
 
   const handleMouseUp = (event: MouseEvent) => {
-    if (!drawingRef.current) {
-      return;
-    }
     if (!isRightButton(event)) {
       return;
     }
-    endDraw(event);
+    setPreview(null);
   };
 
   const handleTouchStart = (event: TouchEvent) => {
-    if (event.touches.length === 2) {
-      startDraw(event);
+    if (event.touches.length !== 2) {
+      return;
     }
+    const pos = getClientPosition(event);
+    if (!pos) {
+      return;
+    }
+    const square = resolveSquare(pos.x, pos.y);
+    if (!square) {
+      return;
+    }
+    dragSessionRef.current = createDragSession(square);
+    setPreview(null);
   };
 
   const handleTouchMove = (event: TouchEvent) => {
-    if (drawingRef.current) {
-      moveDraw(event);
+    const session = dragSessionRef.current;
+    if (!session) {
+      return;
+    }
+    const pos = getClientPosition(event);
+    if (!pos) {
+      return;
+    }
+    const square = resolveSquare(pos.x, pos.y);
+    if (!square) {
+      return;
+    }
+    const next = updateDragSession(session, square);
+    if (next !== session) {
+      dragSessionRef.current = next;
+      updatePreview(next, event);
     }
   };
 
-  const handleTouchEnd = (event: TouchEvent) => {
-    if (drawingRef.current) {
-      endDraw(event);
-    }
+  const handleTouchEnd = () => {
+    setPreview(null);
   };
 
   const captureOptions: AddEventListenerOptions = { capture: true };
 
-  boardEl.addEventListener("contextmenu", handleContextMenu, captureOptions);
   boardEl.addEventListener("mousedown", handleMouseDown, captureOptions);
   document.addEventListener("mousemove", handleMouseMove, captureOptions);
   document.addEventListener("mouseup", handleMouseUp, captureOptions);
@@ -282,14 +211,13 @@ export function attachBoardAnnotationListeners({
   document.addEventListener("touchend", handleTouchEnd, captureOptions);
 
   return () => {
-    boardEl.removeEventListener("contextmenu", handleContextMenu, captureOptions);
     boardEl.removeEventListener("mousedown", handleMouseDown, captureOptions);
     document.removeEventListener("mousemove", handleMouseMove, captureOptions);
     document.removeEventListener("mouseup", handleMouseUp, captureOptions);
     boardEl.removeEventListener("touchstart", handleTouchStart, captureOptions);
     document.removeEventListener("touchmove", handleTouchMove, captureOptions);
     document.removeEventListener("touchend", handleTouchEnd, captureOptions);
-    drawingRef.current = null;
+    dragSessionRef.current = null;
     setPreview(null);
   };
 }
@@ -301,6 +229,7 @@ export interface UseBoardAnnotationsOptions {
   shapes: BoardAnnotation[];
   onChange: (shapes: BoardAnnotation[]) => void;
   getSquareAtClientPos?: (clientX: number, clientY: number) => Square | null;
+  dragSessionRef: React.MutableRefObject<DragSession | null>;
 }
 
 export interface UseBoardAnnotationsResult {
@@ -316,17 +245,12 @@ export function useBoardAnnotations({
   shapes,
   onChange,
   getSquareAtClientPos,
+  dragSessionRef,
 }: UseBoardAnnotationsOptions): UseBoardAnnotationsResult {
   const shapesRef = useRef(shapes);
   const onChangeRef = useRef(onChange);
   const orientationRef = useRef(orientation);
   const getSquareRef = useRef(getSquareAtClientPos);
-  const drawingRef = useRef<{
-    orig: Square;
-    path: Square[];
-    brush: ReturnType<typeof arrowBrushFromModifiers>;
-    moved: boolean;
-  } | null>(null);
 
   const [preview, setPreview] = useState<AnnotationPreview | null>(null);
 
@@ -359,18 +283,18 @@ export function useBoardAnnotations({
       if (!enabled) {
         return () => undefined;
       }
-      return attachBoardAnnotationListeners({
+      return attachBoardAnnotationSupport({
         boardEl,
         orientationRef,
         shapesRef,
         onChangeRef,
         getSquareRef,
         boardRef,
+        dragSessionRef,
         setPreview,
-        drawingRef,
       });
     },
-    [boardRef, enabled],
+    [boardRef, dragSessionRef, enabled],
   );
 
   return { preview, clearAll, bindListeners };

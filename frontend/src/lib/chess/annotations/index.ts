@@ -17,11 +17,25 @@ export {
   squaresFromPgn,
 } from "./pgn";
 export {
+  appendToDragPath,
   arrowEndpoints,
   buildArrowPath,
   collapseCollinear,
+  extendDragPath,
+  isAligned,
+  isOrthogonalNeighbor,
+  isOrthogonalStep,
   simplifyDragPath,
 } from "./path";
+export {
+  CHESSGROUND_DRAW_BRUSHES,
+  cgArrowBrush,
+  cgSquareBrush,
+  createDragSession,
+  drawShapesToAnnotations,
+  updateDragSession,
+} from "./chessground-bridge";
+export type { DragSession } from "./chessground-bridge";
 export {
   annotationKey,
   sameAnnotation,

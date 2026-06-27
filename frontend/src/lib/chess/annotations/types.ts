@@ -1,5 +1,7 @@
 import type { Square } from "chess.js";
 
+import { arrowEndpoints } from "./path";
+
 export type AnnotationBrush = "yellow" | "red" | "blue" | "green" | "orange";
 
 export interface ArrowAnnotation {
@@ -24,8 +26,8 @@ export interface AnnotationPreview {
 
 export function annotationKey(annotation: BoardAnnotation): string {
   if (annotation.type === "arrow") {
-    const path = annotation.path.join(">");
-    return `arrow:${annotation.brush}:${path}`;
+    const { orig, dest } = arrowEndpoints(annotation.path);
+    return `arrow:${annotation.brush}:${orig}>${dest}`;
   }
   return `square:${annotation.brush}:${annotation.square}`;
 }

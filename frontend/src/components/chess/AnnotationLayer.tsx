@@ -9,6 +9,7 @@ import {
   type AnnotationPreview,
   type BoardAnnotation,
   type BoardOrientation,
+  type Point,
 } from "@/lib/chess/annotations";
 
 interface AnnotationLayerProps {
@@ -18,26 +19,13 @@ interface AnnotationLayerProps {
   style?: CSSProperties;
 }
 
-const VIEW_SIZE = 8;
-const STROKE_WIDTH = 0.12;
-const ARROW_HEAD_LENGTH = 0.28;
-const SQUARE_HALF = 0.5;
+/** Matches @lichess-org/chessground drawable stroke width. */
+const STROKE_WIDTH = 10 / 64;
+/** Margin before arrowhead in chessground user coordinates. */
+const ARROW_HEAD_MARGIN = 20 / 64;
+const SQUARE_SIZE = 1;
 
-function toSvgCoord(value: number): number {
-  return ((value + 4) / VIEW_SIZE) * 100;
-}
-
-function pointToSvg(point: { x: number; y: number }): { x: number; y: number } {
-  return {
-    x: toSvgCoord(point.x),
-    y: toSvgCoord(point.y),
-  };
-}
-
-function shortenPathEnd(
-  points: { x: number; y: number }[],
-  margin: number,
-): { x: number; y: number }[] {
+function shortenPathEnd(points: Point[], margin: number): Point[] {
   if (points.length < 2) {
     return points;
   }
@@ -69,7 +57,7 @@ function renderArrow(
       d={path}
       className={`annotation-arrow${preview ? " annotation-arrow--preview" : ""}`}
       stroke={style.stroke}
-      strokeWidth={STROKE_WIDTH * 100}
+      strokeWidth={STROKE_WIDTH}
       strokeOpacity={style.opacity}
       markerEnd={`url(#${markerId})`}
     />
@@ -87,7 +75,7 @@ export function AnnotationLayer({
   const arrowMarkers = useMemo(() => {
     return (Object.keys(BRUSH_STYLES) as Array<keyof typeof BRUSH_STYLES>).map(
       (brush) => {
-        const style = BRUSH_STYLES[brush];
+        const brushStyle = BRUSH_STYLES[brush];
         const id = `${layerId}-arrowhead-${brush}`;
         return (
           <marker
@@ -98,9 +86,13 @@ export function AnnotationLayer({
             refX={2.05}
             refY={2}
             orient="auto"
-            markerUnits="strokeWidth"
+            overflow="visible"
           >
-            <path d="M0,0 V4 L3,2 Z" fill={style.stroke} fillOpacity={style.opacity} />
+            <path
+              d="M0,0 V4 L3,2 Z"
+              fill={brushStyle.stroke}
+              fillOpacity={brushStyle.opacity}
+            />
           </marker>
         );
       },
@@ -111,9 +103,9 @@ export function AnnotationLayer({
     .filter((annotation) => annotation.type === "arrow")
     .map((annotation, index) => {
       const points = annotation.path.map((square) =>
-        pointToSvg(squareToPoint(square, orientation)),
+        squareToPoint(square, orientation),
       );
-      const shortened = shortenPathEnd(points, ARROW_HEAD_LENGTH);
+      const shortened = shortenPathEnd(points, ARROW_HEAD_MARGIN);
       const path = pointsToSvgPath(shortened);
       return renderArrow(
         path,
@@ -127,19 +119,18 @@ export function AnnotationLayer({
   const squareElements = annotations
     .filter((annotation) => annotation.type === "square")
     .map((annotation) => {
-      const center = pointToSvg(squareToPoint(annotation.square, orientation));
-      const style = BRUSH_STYLES[annotation.brush];
-      const size = (SQUARE_HALF * 2 * 100) / VIEW_SIZE;
+      const center = squareToPoint(annotation.square, orientation);
+      const brushStyle = BRUSH_STYLES[annotation.brush];
       return (
         <rect
           key={`square-${annotation.square}-${annotation.brush}`}
           className="annotation-square"
-          x={center.x - size / 2}
-          y={center.y - size / 2}
-          width={size}
-          height={size}
-          fill={style.fill}
-          fillOpacity={style.squareOpacity}
+          x={center.x - SQUARE_SIZE / 2}
+          y={center.y - SQUARE_SIZE / 2}
+          width={SQUARE_SIZE}
+          height={SQUARE_SIZE}
+          fill={brushStyle.fill}
+          fillOpacity={brushStyle.squareOpacity}
         />
       );
     });
@@ -150,9 +141,9 @@ export function AnnotationLayer({
           pointsToSvgPath(
             shortenPathEnd(
               preview.path.map((square) =>
-                pointToSvg(squareToPoint(square, orientation)),
+                squareToPoint(square, orientation),
               ),
-              ARROW_HEAD_LENGTH,
+              ARROW_HEAD_MARGIN,
             ),
           ),
           preview.brush,
@@ -172,7 +163,7 @@ export function AnnotationLayer({
 
   return (
     <div className="annotation-layer" style={style} aria-hidden>
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+      <svg viewBox="-4 -4 8 8" preserveAspectRatio="xMidYMid slice">
         <defs>{arrowMarkers}</defs>
         {squareElements}
         {arrowElements}

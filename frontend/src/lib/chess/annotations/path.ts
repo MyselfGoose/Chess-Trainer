@@ -2,6 +2,17 @@ import type { Square } from "chess.js";
 
 import { parseSquare, toSquare } from "./coordinates";
 
+export function isOrthogonalStep(a: Square, b: Square): boolean {
+  const pa = parseSquare(a);
+  const pb = parseSquare(b);
+  const fileDiff = Math.abs(pa.file - pb.file);
+  const rankDiff = Math.abs(pa.rank - pb.rank);
+  return (fileDiff === 1 && rankDiff === 0) || (fileDiff === 0 && rankDiff === 1);
+}
+
+/** @deprecated Use {@link isOrthogonalStep}. */
+export const isOrthogonalNeighbor = isOrthogonalStep;
+
 function isKnightMove(orig: Square, dest: Square): boolean {
   const o = parseSquare(orig);
   const d = parseSquare(dest);
@@ -10,10 +21,15 @@ function isKnightMove(orig: Square, dest: Square): boolean {
   return fileDiff * rankDiff === 2;
 }
 
-function isAligned(orig: Square, dest: Square): boolean {
+/** Same rank, file, or diagonal — always rendered as a straight arrow on chess.com. */
+export function isAligned(orig: Square, dest: Square): boolean {
   const o = parseSquare(orig);
   const d = parseSquare(dest);
-  return o.file === d.file || o.rank === d.rank || Math.abs(o.file - d.file) === Math.abs(o.rank - d.rank);
+  return (
+    o.file === d.file ||
+    o.rank === d.rank ||
+    Math.abs(o.file - d.file) === Math.abs(o.rank - d.rank)
+  );
 }
 
 function knightCornerOptions(orig: Square, dest: Square): [Square, Square] {
@@ -24,26 +40,24 @@ function knightCornerOptions(orig: Square, dest: Square): [Square, Square] {
   return [cornerA, cornerB];
 }
 
+/**
+ * Pick the L-path corner for a knight arrow.
+ * Uses squares the pointer passed over during drag — never a full squiggly trail.
+ */
 function pickKnightCorner(
   orig: Square,
   dest: Square,
-  dragPath: Square[],
+  visited: Square[],
 ): Square {
   const [cornerA, cornerB] = knightCornerOptions(orig, dest);
-  const pathSet = new Set(dragPath);
-  if (pathSet.has(cornerA) && !pathSet.has(cornerB)) {
-    return cornerA;
+  let lastCorner: Square | null = null;
+  for (const square of visited) {
+    if (square === cornerA || square === cornerB) {
+      lastCorner = square;
+    }
   }
-  if (pathSet.has(cornerB) && !pathSet.has(cornerA)) {
-    return cornerB;
-  }
-
-  const lastIntermediate = dragPath.length >= 2 ? dragPath[dragPath.length - 2] : null;
-  if (lastIntermediate === cornerA) {
-    return cornerA;
-  }
-  if (lastIntermediate === cornerB) {
-    return cornerB;
+  if (lastCorner) {
+    return lastCorner;
   }
 
   const o = parseSquare(orig);
@@ -51,22 +65,6 @@ function pickKnightCorner(
   const fileDiff = Math.abs(o.file - d.file);
   const rankDiff = Math.abs(o.rank - d.rank);
   return fileDiff > rankDiff ? cornerB : cornerA;
-}
-
-function buildKnightPath(orig: Square, dest: Square, dragPath: Square[]): Square[] {
-  const corner = pickKnightCorner(orig, dest, dragPath);
-  if (corner === orig) {
-    return [orig, dest];
-  }
-  return [orig, corner, dest];
-}
-
-function isOrthogonalStep(a: Square, b: Square): boolean {
-  const p = parseSquare(a);
-  const q = parseSquare(b);
-  const fileDiff = Math.abs(p.file - q.file);
-  const rankDiff = Math.abs(p.rank - q.rank);
-  return (fileDiff === 1 && rankDiff === 0) || (fileDiff === 0 && rankDiff === 1);
 }
 
 /** Remove duplicate consecutive squares and backtracking. */
@@ -114,50 +112,31 @@ export function collapseCollinear(path: Square[]): Square[] {
   return result;
 }
 
-function isValidOrthogonalPath(path: Square[]): boolean {
-  for (let i = 0; i < path.length - 1; i++) {
-    if (!isOrthogonalStep(path[i]!, path[i + 1]!)) {
-      return false;
-    }
-  }
-  return true;
-}
-
+/**
+ * Build the final arrow path using chess.com rules:
+ * - Rank/file/diagonal → straight line (ignore drag wiggles)
+ * - Knight move → single L-bend (at most one corner)
+ * - Everything else → straight line between square centers
+ */
 export function buildArrowPath(
   orig: Square,
   dest: Square,
-  dragPath: Square[],
+  visited: Square[] = [],
 ): Square[] {
   if (orig === dest) {
     return [orig];
-  }
-
-  const simplified = simplifyDragPath(dragPath);
-  const startsAtOrig = simplified[0] === orig;
-  const endsAtDest = simplified[simplified.length - 1] === dest;
-
-  if (
-    simplified.length >= 3 &&
-    startsAtOrig &&
-    endsAtDest &&
-    isValidOrthogonalPath(simplified)
-  ) {
-    return collapseCollinear(simplified);
-  }
-
-  if (isKnightMove(orig, dest)) {
-    return buildKnightPath(orig, dest, simplified);
   }
 
   if (isAligned(orig, dest)) {
     return [orig, dest];
   }
 
-  if (simplified.length >= 2 && startsAtOrig && endsAtDest) {
-    const collapsed = collapseCollinear(simplified);
-    if (isValidOrthogonalPath(collapsed)) {
-      return collapsed;
+  if (isKnightMove(orig, dest)) {
+    const corner = pickKnightCorner(orig, dest, visited);
+    if (corner === orig || corner === dest) {
+      return [orig, dest];
     }
+    return [orig, corner, dest];
   }
 
   return [orig, dest];
@@ -169,3 +148,18 @@ export function arrowEndpoints(path: Square[]): { orig: Square; dest: Square } {
     dest: path[path.length - 1]!,
   };
 }
+
+/** @deprecated Drag trails are no longer used; arrows snap to chess.com rules. */
+export function extendDragPath(
+  path: Square[],
+  orig: Square,
+  square: Square,
+): Square[] {
+  if (path.length === 0) {
+    return [orig, square];
+  }
+  return [orig, square];
+}
+
+/** @deprecated Use {@link extendDragPath}. */
+export const appendToDragPath = extendDragPath;
