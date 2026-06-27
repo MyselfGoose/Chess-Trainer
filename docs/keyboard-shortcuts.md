@@ -118,3 +118,62 @@ For developers:
 - Bindings component: `frontend/src/components/chess/MoveNavigationBindings.tsx`
 
 See [Architecture](./architecture.md) for how these integrate with study and play hooks.
+
+---
+
+## Board annotations
+
+RepertoireLab supports chess.com-style arrows and square highlights on all boards (study, builder, free play, and training).
+
+### Drawing arrows
+
+| Input | Action |
+|-------|--------|
+| Right-click + drag | Draw an arrow along the path you trace |
+| Knight moves | Drag through the squares — arrows render as **L-shaped** orthogonal paths |
+| Rook/queen/bishop | Straight arrows between squares |
+
+### Arrow colors (hold while drawing)
+
+| Modifier | Color |
+|----------|-------|
+| (none) | Yellow |
+| Ctrl / Cmd | Red |
+| Alt | Blue |
+| Shift | Green |
+
+### Square highlights
+
+| Input | Action |
+|-------|--------|
+| Right-click (no drag) | Highlight square |
+
+| Modifier | Color |
+|----------|-------|
+| (none) | Red |
+| Ctrl / Cmd | Yellow |
+| Alt | Blue |
+| Shift | Green |
+
+### Other controls
+
+| Input | Action |
+|-------|--------|
+| Left-click board | Clear all user annotations |
+| Draw same arrow again | Toggle erase that arrow |
+| Draw same highlight again | Toggle erase that highlight |
+
+### PGN arrows in study
+
+Imported PGN `[%cal]` arrows and `[%csl]` square highlights appear automatically in study mode for the current position.
+
+### Touch devices
+
+Use a **two-finger drag** on the board to draw arrows. Single-finger touch is reserved for piece moves.
+
+### Implementation reference
+
+- Path math: `frontend/src/lib/chess/annotations/`
+- Renderer: `frontend/src/components/chess/AnnotationLayer.tsx`
+- Input hook: `frontend/src/hooks/useBoardAnnotations.ts`
+

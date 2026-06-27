@@ -13,6 +13,7 @@ import { PromotionDialog } from "@/components/chess/PromotionDialog";
 import { PgnLineStats } from "@/components/pgn/PgnLineStats";
 import { PgnPathBar } from "@/components/pgn/PgnPathBar";
 import type { PromotionPiece } from "@/lib/chess/types";
+import { useBoardAnnotationState } from "@/hooks/useBoardAnnotationState";
 import { useRepertoireBuilder } from "@/hooks/useRepertoireBuilder";
 import { REPERTOIRE_NAME_MAX_LENGTH } from "@/lib/repertoires";
 
@@ -62,6 +63,7 @@ export function RepertoireBuilder({
 }: RepertoireBuilderProps) {
   const router = useRouter();
   const builder = useRepertoireBuilder({ repertoireId, initialName });
+  const boardAnnotations = useBoardAnnotationState();
   const boardNavRef = useRef<HTMLDivElement>(null);
   const [orientation, setOrientation] = useState<BoardOrientation>("white");
   const [pendingPromotion, setPendingPromotion] =
@@ -151,6 +153,10 @@ export function RepertoireBuilder({
               repertoireDests={builder.movableDests}
               onRepertoireMove={handleMove}
               orientation={orientation}
+              annotations={{
+                ...boardAnnotations.annotations,
+                enabled: pendingPromotion === null,
+              }}
             />
           </div>
         </BoardFrame>

@@ -8,6 +8,7 @@ import {
   MoveNavigationHints,
 } from "@/components/chess/MoveNavigationBindings";
 import { PromotionDialog } from "@/components/chess/PromotionDialog";
+import { useBoardAnnotationState } from "@/hooks/useBoardAnnotationState";
 import { useChessGame } from "@/hooks/useChessGame";
 
 type BoardOrientation = "white" | "black";
@@ -96,6 +97,7 @@ function PlayControls({
 
 export default function BoardPage() {
   const play = useChessGame();
+  const boardAnnotations = useBoardAnnotationState();
   const boardNavRef = useRef<HTMLDivElement>(null);
   const [orientation, setOrientation] = useState<BoardOrientation>("white");
 
@@ -129,6 +131,10 @@ export default function BoardPage() {
               snapshot={play.snapshot}
               onMove={play.attemptMove}
               orientation={orientation}
+              annotations={{
+                ...boardAnnotations.annotations,
+                enabled: play.pendingPromotion === null,
+              }}
             />
           </div>
         </BoardFrame>

@@ -1,36 +1,52 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Chessground } from "@lichess-org/chessground";
 import type { Api } from "@lichess-org/chessground/api";
+import type { DrawShape } from "@lichess-org/chessground/draw";
 import type { Color, Key } from "@lichess-org/chessground/types";
 import { Chess } from "chess.js";
 import type { Square } from "chess.js";
 
+import { AnnotationLayer } from "@/components/chess/AnnotationLayer";
 import { buildMovableDests } from "@/lib/chess/destinations";
+import type { BoardAnnotationsConfig } from "@/lib/chess/annotations";
 import type { ChessGame } from "@/lib/chess/game";
 import type { ChessGameSnapshot } from "@/lib/chess/types";
+import { useBoardAnnotations } from "@/hooks/useBoardAnnotations";
+import { useBoardOverlayStyle } from "@/hooks/useBoardOverlayStyle";
 
-type PlayModeProps = {
+export type { BoardAnnotationsConfig } from "@/lib/chess/annotations";
+
+type CommonBoardProps = {
+  orientation?: "white" | "black";
+  className?: string;
+  annotations?: BoardAnnotationsConfig;
+};
+
+type PlayModeProps = CommonBoardProps & {
   mode: "play";
   chess: ChessGame;
   snapshot: ChessGameSnapshot;
   onMove: (from: Square, to: Square) => boolean;
-  orientation?: "white" | "black";
-  className?: string;
 };
 
-type StudyModeProps = {
+type StudyModeProps = CommonBoardProps & {
   mode: "study";
   fen: string;
   lastMove?: [Square, Square] | null;
   repertoireDests?: Map<Square, Square[]>;
   onRepertoireMove?: (from: Square, to: Square) => boolean;
-  orientation?: "white" | "black";
-  className?: string;
 };
 
 export type ChessBoardProps = PlayModeProps | StudyModeProps;
+
+const DISABLED_DRAWABLE = {
+  enabled: false,
+  visible: false,
+  shapes: [] as DrawShape[],
+  autoShapes: [] as DrawShape[],
+};
 
 function toChessgroundColor(color: "white" | "black"): Color {
   return color;
@@ -69,7 +85,7 @@ function hasRepertoireMoves(
 }
 
 export function ChessBoard(props: ChessBoardProps) {
-  const { orientation = "white", className } = props;
+  const { orientation = "white", className, annotations } = props;
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const apiRef = useRef<Api | null>(null);
@@ -81,6 +97,39 @@ export function ChessBoard(props: ChessBoardProps) {
         : () => false,
   );
   const fenRef = useRef(props.mode === "play" ? props.snapshot.fen : props.fen);
+
+  const annotationsEnabled =
+    annotations !== undefined && annotations.enabled !== false;
+
+  const getSquareAtClientPos = useCallback(
+    (clientX: number, clientY: number): Square | null => {
+      const api = apiRef.current;
+      if (api) {
+        const key = api.getKeyAtDomPos([clientX, clientY]);
+        if (key) {
+          return key as Square;
+        }
+      }
+      return null;
+    },
+    [],
+  );
+
+  const overlayStyle = useBoardOverlayStyle(containerRef, boardRef, orientation);
+
+  const { preview, bindListeners } = useBoardAnnotations({
+    boardRef,
+    orientation,
+    enabled: annotationsEnabled,
+    shapes: annotations?.shapes ?? [],
+    onChange: annotations?.onChange ?? (() => undefined),
+    getSquareAtClientPos,
+  });
+
+  const renderedAnnotations = useMemo(
+    () => [...(annotations?.autoShapes ?? []), ...(annotations?.shapes ?? [])],
+    [annotations?.autoShapes, annotations?.shapes],
+  );
 
   useEffect(() => {
     if (props.mode === "play") {
@@ -99,6 +148,16 @@ export function ChessBoard(props: ChessBoardProps) {
       return;
     }
 
+    const commonConfig = {
+      orientation,
+      coordinates: true,
+      animation: { enabled: true, duration: 200 },
+      highlight: { lastMove: true, check: true },
+      addDimensionsCssVarsTo: container,
+      drawable: DISABLED_DRAWABLE,
+      disableContextMenu: annotationsEnabled,
+    };
+
     if (props.mode === "study") {
       const turnColor = toChessgroundColor(getTurnFromFen(props.fen));
       const inCheck = isInCheck(props.fen);
@@ -106,18 +165,14 @@ export function ChessBoard(props: ChessBoardProps) {
       const dests = toChessgroundDests(props.repertoireDests);
 
       const api = Chessground(element, {
+        ...commonConfig,
         fen: props.fen,
-        orientation,
         turnColor,
         check: inCheck ? turnColor : undefined,
         lastMove: props.lastMove ?? undefined,
-        coordinates: true,
-        animation: { enabled: true, duration: 200 },
-        highlight: { lastMove: true, check: true },
         viewOnly: !canPlay,
         draggable: { enabled: canPlay, showGhost: canPlay },
         selectable: { enabled: canPlay },
-        addDimensionsCssVarsTo: container,
         movable: canPlay
           ? {
               free: false,
@@ -151,17 +206,13 @@ export function ChessBoard(props: ChessBoardProps) {
     const turnColor = toChessgroundColor(snapshot.turn);
 
     const api = Chessground(element, {
+      ...commonConfig,
       fen: snapshot.fen,
-      orientation,
       turnColor,
       check: snapshot.inCheck ? turnColor : undefined,
       lastMove: snapshot.lastMove ?? undefined,
-      coordinates: true,
-      animation: { enabled: true, duration: 200 },
-      highlight: { lastMove: true, check: true },
       draggable: { enabled: true, showGhost: true },
       selectable: { enabled: true },
-      addDimensionsCssVarsTo: container,
       movable: {
         free: false,
         color: turnColor,
@@ -185,7 +236,21 @@ export function ChessBoard(props: ChessBoardProps) {
       apiRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount once; sync via second effect
-  }, [orientation, props.mode]);
+  }, [annotationsEnabled, orientation, props.mode]);
+
+  useEffect(() => {
+    const root = boardRef.current;
+    if (!root || !annotationsEnabled || !apiRef.current) {
+      return;
+    }
+
+    const boardEl = root.querySelector("cg-board");
+    if (!(boardEl instanceof HTMLElement)) {
+      return;
+    }
+
+    return bindListeners(boardEl);
+  }, [annotationsEnabled, bindListeners, orientation, props.mode]);
 
   useEffect(() => {
     const api = apiRef.current;
@@ -208,6 +273,8 @@ export function ChessBoard(props: ChessBoardProps) {
         viewOnly: !canPlay,
         draggable: { enabled: canPlay, showGhost: canPlay },
         selectable: { enabled: canPlay },
+        disableContextMenu: annotationsEnabled,
+        drawable: DISABLED_DRAWABLE,
         movable: canPlay
           ? {
               free: false,
@@ -231,20 +298,30 @@ export function ChessBoard(props: ChessBoardProps) {
       turnColor,
       check: snapshot.inCheck ? turnColor : undefined,
       lastMove: snapshot.lastMove ?? undefined,
+      disableContextMenu: annotationsEnabled,
+      drawable: DISABLED_DRAWABLE,
       movable: {
         color: gameOver ? undefined : turnColor,
         dests: gameOver ? new Map() : buildMovableDests(engine),
         showDests: !gameOver,
       },
     });
-  }, [orientation, props]);
+  }, [annotationsEnabled, orientation, props]);
 
   return (
     <div
       ref={containerRef}
-      className={`chess-board-container ${className ?? ""}`}
+      className={`chess-board-container relative ${className ?? ""}`}
     >
       <div ref={boardRef} className="chess-board-host" />
+      {annotationsEnabled ? (
+        <AnnotationLayer
+          annotations={renderedAnnotations}
+          preview={preview}
+          orientation={orientation}
+          style={overlayStyle}
+        />
+      ) : null}
     </div>
   );
 }

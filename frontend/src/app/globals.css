@@ -4,6 +4,7 @@
 @import "../styles/chess/chessground.chesscom.css";
 @import "../styles/chess/chessground.cburnett.css";
 @import "../styles/chess/chessground.layout.css";
+@import "../styles/chess/annotations.css";
 
 :root {
   --background: #ffffff;

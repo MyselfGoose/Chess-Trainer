@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { use, useCallback, useRef, useState, type ReactNode } from "react";
+import { use, useCallback, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Square } from "chess.js";
 
 import { ChessBoard } from "@/components/chess/ChessBoard";
@@ -12,6 +12,8 @@ import {
 import { PromotionDialog } from "@/components/chess/PromotionDialog";
 import { PgnStudyPanel } from "@/components/pgn/PgnStudyPanel";
 import type { PromotionPiece } from "@/lib/chess/types";
+import { annotationsFromPgnNode } from "@/lib/chess/annotations";
+import { useBoardAnnotationState } from "@/hooks/useBoardAnnotationState";
 import { usePgnStudy } from "@/hooks/usePgnStudy";
 
 interface StudyPendingPromotion {
@@ -56,6 +58,7 @@ export default function StudyPage({
 }) {
   const { id } = use(params);
   const study = usePgnStudy(id);
+  const boardAnnotations = useBoardAnnotationState();
   const boardNavRef = useRef<HTMLDivElement>(null);
   const [orientation, setOrientation] = useState<BoardOrientation>("white");
   const [studyPromotion, setStudyPromotion] =
@@ -92,6 +95,15 @@ export default function StudyPage({
   }, []);
 
   const studyTurnColor = study.turnLabel === "White" ? "white" : "black";
+
+  const pgnAutoShapes = useMemo(
+    () =>
+      annotationsFromPgnNode(
+        study.currentNode?.arrows,
+        study.currentNode?.squares,
+      ),
+    [study.currentNode?.arrows, study.currentNode?.squares],
+  );
 
   if (!study.isHydrated) {
     return (
@@ -144,6 +156,11 @@ export default function StudyPage({
               repertoireDests={study.repertoireDests}
               onRepertoireMove={handleStudyMove}
               orientation={orientation}
+              annotations={{
+                ...boardAnnotations.annotations,
+                autoShapes: pgnAutoShapes,
+                enabled: studyPromotion === null,
+              }}
             />
           </div>
         </BoardFrame>

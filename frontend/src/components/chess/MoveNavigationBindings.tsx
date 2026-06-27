@@ -33,6 +33,8 @@ export function MoveNavigationHints() {
       <span className="font-mono">→</span> forward ·{" "}
       <span className="font-mono">↑</span> start ·{" "}
       <span className="font-mono">↓</span> latest · scroll on board
+      <span className="mx-1">·</span>
+      right-drag arrows · right-click highlight · click to clear
     </p>
   );
 }

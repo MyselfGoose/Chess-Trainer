@@ -4,6 +4,7 @@ import { type ReactNode } from "react";
 import type { Square } from "chess.js";
 
 import { ChessBoard } from "@/components/chess/ChessBoard";
+import { useBoardAnnotationState } from "@/hooks/useBoardAnnotationState";
 
 interface TrainingBoardProps {
   fen: string;
@@ -32,6 +33,8 @@ export function TrainingBoard({
   isUserTurn,
   onMove,
 }: TrainingBoardProps) {
+  const boardAnnotations = useBoardAnnotationState();
+
   return (
     <BoardFrame>
       <ChessBoard
@@ -41,6 +44,7 @@ export function TrainingBoard({
         repertoireDests={isUserTurn ? movableDests : new Map()}
         onRepertoireMove={onMove}
         orientation={orientation}
+        annotations={boardAnnotations.annotations}
       />
     </BoardFrame>
   );

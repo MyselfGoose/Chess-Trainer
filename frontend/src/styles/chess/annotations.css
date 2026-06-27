@@ -1,0 +1,25 @@
+.annotation-layer {
+  pointer-events: none;
+  z-index: 10;
+  overflow: visible;
+}
+
+.annotation-layer svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.annotation-layer .annotation-arrow {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.annotation-layer .annotation-arrow--preview {
+  opacity: 0.75;
+}
+
+.annotation-layer .annotation-square {
+  stroke: none;
+}
