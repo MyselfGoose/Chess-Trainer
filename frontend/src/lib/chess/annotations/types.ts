@@ -36,6 +36,26 @@ export function sameAnnotation(a: BoardAnnotation, b: BoardAnnotation): boolean 
   return annotationKey(a) === annotationKey(b);
 }
 
+/** Add incoming annotations or toggle them off if they already exist (chess.com erase). */
+export function mergeAnnotationChange(
+  current: BoardAnnotation[],
+  incoming: BoardAnnotation[],
+): BoardAnnotation[] {
+  if (incoming.length === 0) {
+    return current;
+  }
+
+  let next = current;
+  for (const annotation of incoming) {
+    if (next.some((shape) => sameAnnotation(shape, annotation))) {
+      next = next.filter((shape) => !sameAnnotation(shape, annotation));
+    } else {
+      next = [...next, annotation];
+    }
+  }
+  return next;
+}
+
 export interface BoardAnnotationsConfig {
   shapes: BoardAnnotation[];
   autoShapes?: BoardAnnotation[];

@@ -38,6 +38,7 @@ export {
 export type { DragSession } from "./chessground-bridge";
 export {
   annotationKey,
+  mergeAnnotationChange,
   sameAnnotation,
 } from "./types";
 export type {

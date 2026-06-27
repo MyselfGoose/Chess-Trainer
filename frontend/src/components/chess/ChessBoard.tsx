@@ -13,6 +13,8 @@ import { buildMovableDests } from "@/lib/chess/destinations";
 import {
   CHESSGROUND_DRAW_BRUSHES,
   drawShapesToAnnotations,
+  mergeAnnotationChange,
+  type BoardAnnotation,
   type BoardAnnotationsConfig,
   type DragSession,
 } from "@/lib/chess/annotations";
@@ -114,6 +116,7 @@ export function ChessBoard(props: ChessBoardProps) {
   const boardRef = useRef<HTMLDivElement>(null);
   const apiRef = useRef<Api | null>(null);
   const dragSessionRef = useRef<DragSession | null>(null);
+  const userShapesRef = useRef<BoardAnnotation[]>(annotations?.shapes ?? []);
   const annotationsOnChangeRef = useRef(annotations?.onChange ?? (() => undefined));
 
   const onMoveRef = useRef(
@@ -132,11 +135,17 @@ export function ChessBoard(props: ChessBoardProps) {
     annotationsOnChangeRef.current = annotations?.onChange ?? (() => undefined);
   }, [annotations?.onChange]);
 
+  useEffect(() => {
+    userShapesRef.current = annotations?.shapes ?? [];
+  }, [annotations?.shapes]);
+
   const handleDrawableChange = useCallback((shapes: DrawShape[]) => {
     const session = dragSessionRef.current;
-    const converted = drawShapesToAnnotations(shapes, session);
+    const incoming = drawShapesToAnnotations(shapes, session);
     dragSessionRef.current = null;
-    annotationsOnChangeRef.current(converted);
+    const next = mergeAnnotationChange(userShapesRef.current, incoming);
+    userShapesRef.current = next;
+    annotationsOnChangeRef.current(next);
     apiRef.current?.set({ drawable: { shapes: [], autoShapes: [] } });
   }, []);
 
