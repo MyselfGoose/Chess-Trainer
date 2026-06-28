@@ -1,62 +1,116 @@
+import type { Arrow, SquareAnnotation } from "@echecs/pgn";
+
+import { formatNagsForExport } from "./nags";
 import type { StudyGame, StudyNode } from "./types";
 
 function getNode(game: StudyGame, id: string): StudyNode | undefined {
   return game.nodes[id];
 }
 
-function formatMoveNumber(node: StudyNode): string {
-  if (node.color === "w" && node.moveNumber !== undefined) {
-    return `${node.moveNumber}. `;
-  }
-  if (node.color === "b" && node.moveNumber !== undefined) {
-    return `${node.moveNumber}... `;
-  }
-  return "";
+export function escapePgnComment(text: string): string {
+  return text.replace(/}/g, "\\}");
 }
 
-function emitVariations(
-  game: StudyGame,
-  parent: StudyNode,
-  mainChildId: string,
-): string {
-  const altChildren = parent.childIds.filter((id) => id !== mainChildId);
-  if (altChildren.length === 0) {
+function formatCal(arrows: Arrow[]): string {
+  if (arrows.length === 0) {
     return "";
   }
-
-  return altChildren
-    .map((childId) => {
-      const child = getNode(game, childId);
-      if (!child) {
-        return "";
-      }
-      return ` (${emitLine(game, child)})`;
-    })
-    .join("");
+  const items = arrows.map((arrow) => `${arrow.color}${arrow.from}${arrow.to}`);
+  return `[%cal ${items.join(",")}]`;
 }
 
-function emitLine(game: StudyGame, startNode: StudyNode): string {
+function formatCsl(squares: SquareAnnotation[]): string {
+  if (squares.length === 0) {
+    return "";
+  }
+  const items = squares.map((square) => `${square.color}${square.square}`);
+  return `[%csl ${items.join(",")}]`;
+}
+
+export function formatPgnAnnotations(node: StudyNode): string {
+  const parts: string[] = [];
+  const cal = formatCal(node.arrows ?? []);
+  const csl = formatCsl(node.squares ?? []);
+  if (cal) {
+    parts.push(cal);
+  }
+  if (csl) {
+    parts.push(csl);
+  }
+  return parts.join(" ");
+}
+
+function formatMoveSuffix(node: StudyNode): string {
+  const nagText = formatNagsForExport(node.annotations);
+  const annotationText = formatPgnAnnotations(node);
+  const commentParts: string[] = [];
+
+  if (node.comment) {
+    commentParts.push(escapePgnComment(node.comment));
+  }
+  if (annotationText) {
+    commentParts.push(annotationText);
+  }
+
+  const commentBlock =
+    commentParts.length > 0 ? ` {${commentParts.join(" ")}}` : "";
+
+  const nagSuffix = nagText ? ` ${nagText}` : "";
+  return `${nagSuffix}${commentBlock}`;
+}
+
+function formatMove(
+  node: StudyNode,
+  options?: { inlineBlack?: boolean },
+): string {
+  const moveNumber =
+    node.color === "w" && node.moveNumber !== undefined
+      ? `${node.moveNumber}. `
+      : node.color === "b" &&
+          node.moveNumber !== undefined &&
+          !options?.inlineBlack
+        ? `${node.moveNumber}... `
+        : "";
+  return `${moveNumber}${node.san}${formatMoveSuffix(node)}`;
+}
+
+function emitSequence(game: StudyGame, startNode: StudyNode): string {
   const parts: string[] = [];
   let current: StudyNode | undefined = startNode;
 
   while (current) {
-    parts.push(`${formatMoveNumber(current)}${current.san}`);
-    if (current.comment) {
-      parts.push(` {${current.comment}}`);
-    }
+    parts.push(formatMove(current));
 
-    const mainChildId: string | undefined = current.childIds[0];
-    if (!mainChildId) {
+    const children = current.childIds;
+    if (children.length === 0) {
       break;
     }
 
-    const variations = emitVariations(game, current, mainChildId);
-    parts.push(variations);
+    const mainId = children[0];
+    const mainNode = getNode(game, mainId);
+    if (!mainNode) {
+      break;
+    }
 
-    current = getNode(game, mainChildId);
+    const inlineBlack =
+      current.color === "w" &&
+      mainNode.color === "b" &&
+      mainNode.moveNumber === current.moveNumber;
+    parts.push(formatMove(mainNode, { inlineBlack }));
+
+    for (const altId of children.slice(1)) {
+      const altNode = getNode(game, altId);
+      if (altNode) {
+        parts.push(`(${emitSequence(game, altNode)})`);
+      }
+    }
+
+    const continuationId =
+      mainNode.childIds.length > 0 ? mainNode.childIds[0] : undefined;
+    current = continuationId ? getNode(game, continuationId) : undefined;
   }
 
-  return parts.join("");
+  return parts.join(" ");
 }
 
 function formatHeaders(meta: Record<string, string>): string {
@@ -79,7 +133,7 @@ export function studyGameToPgn(game: StudyGame): string {
       ? root.childIds
           .map((childId) => {
             const child = getNode(game, childId);
-            return child ? emitLine(game, child) : "";
+            return child ? emitSequence(game, child) : "";
           })
           .filter(Boolean)
           .join(" ")

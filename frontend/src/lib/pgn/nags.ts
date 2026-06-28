@@ -40,3 +40,13 @@ export function formatAnnotations(annotations: string[] | undefined): string {
   }
   return annotations.map(formatNag).join("");
 }
+
+/** Emit raw NAG tokens ($n) for PGN export — not display symbols. */
+export function formatNagsForExport(annotations: string[] | undefined): string {
+  if (!annotations || annotations.length === 0) {
+    return "";
+  }
+  return annotations
+    .map((token) => (token.startsWith("$") ? token : `$${token}`))
+    .join(" ");
+}

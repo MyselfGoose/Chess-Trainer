@@ -1,9 +1,15 @@
 import type { StudyGame } from "@/lib/pgn";
 
 import {
+  DEFAULT_REPERTOIRE_META,
+  isValidRepertoire,
+  migrateRepertoire,
+} from "./meta";
+import {
   MAX_CATALOG_BYTES,
   REPERTOIRE_CATALOG_KEY,
   type Repertoire,
+  type RepertoireMeta,
   type RepertoireSource,
 } from "./types";
 
@@ -24,26 +30,12 @@ function parseCatalog(raw: string): Repertoire[] {
     if (!Array.isArray(parsed)) {
       return [];
     }
-    return parsed.filter(isValidRepertoire);
+    return parsed
+      .map((item) => migrateRepertoire(item))
+      .filter((item): item is Repertoire => item !== null && isValidRepertoire(item));
   } catch {
     return [];
   }
-}
-
-function isValidRepertoire(value: unknown): value is Repertoire {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-  const record = value as Record<string, unknown>;
-  return (
-    typeof record.id === "string" &&
-    typeof record.name === "string" &&
-    (record.source === "imported" || record.source === "created") &&
-    typeof record.createdAt === "string" &&
-    typeof record.updatedAt === "string" &&
-    Array.isArray(record.games) &&
-    Array.isArray(record.registeredLeafIds)
-  );
 }
 
 function readCatalog(): Repertoire[] {
@@ -86,6 +78,7 @@ export interface CreateRepertoireInput {
   games: StudyGame[];
   fileName?: string;
   registeredLeafIds?: string[];
+  meta?: Partial<RepertoireMeta>;
 }
 
 export function createRepertoire(input: CreateRepertoireInput): Repertoire {
@@ -99,6 +92,10 @@ export function createRepertoire(input: CreateRepertoireInput): Repertoire {
     fileName: input.fileName,
     games: input.games,
     registeredLeafIds: input.registeredLeafIds ?? [],
+    meta: {
+      ...DEFAULT_REPERTOIRE_META,
+      ...input.meta,
+    },
   };
   saveRepertoire(repertoire);
   return repertoire;
@@ -121,16 +118,22 @@ export function saveRepertoire(repertoire: Repertoire): void {
 
 export function updateRepertoire(
   id: string,
-  patch: Partial<Pick<Repertoire, "name" | "games" | "registeredLeafIds" | "fileName">>,
+  patch: Partial<
+    Pick<Repertoire, "name" | "games" | "registeredLeafIds" | "fileName">
+  > & {
+    meta?: Partial<RepertoireMeta>;
+  },
 ): Repertoire | null {
   const catalog = readCatalog();
   const index = catalog.findIndex((item) => item.id === id);
   if (index < 0) {
     return null;
   }
+  const current = catalog[index];
   const updated: Repertoire = {
-    ...catalog[index],
+    ...current,
     ...patch,
+    meta: patch.meta ? { ...current.meta, ...patch.meta } : current.meta,
     updatedAt: new Date().toISOString(),
   };
   catalog[index] = updated;

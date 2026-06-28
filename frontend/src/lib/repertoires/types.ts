@@ -2,6 +2,26 @@ import type { StudyGame } from "@/lib/pgn";
 
 export type RepertoireSource = "imported" | "created";
 
+export interface RepertoireChapter {
+  id: string;
+  name: string;
+  /** Node IDs or line IDs belonging to this chapter */
+  lineIds: string[];
+  color?: "white" | "black" | "both";
+  tags: string[];
+  sortOrder: number;
+}
+
+export interface RepertoireMeta {
+  description?: string;
+  tags: string[];
+  chapters: RepertoireChapter[];
+  forkedFromId?: string;
+  version: number;
+  lastStudiedAt?: string;
+  coverOpening?: string;
+}
+
 export interface Repertoire {
   id: string;
   name: string;
@@ -11,6 +31,7 @@ export interface Repertoire {
   fileName?: string;
   games: StudyGame[];
   registeredLeafIds: string[];
+  meta: RepertoireMeta;
 }
 
 export type BoardOrientation = "white" | "black";

@@ -1,3 +1,4 @@
+import { isValidRepertoire, migrateRepertoire } from "./meta";
 import { listRepertoires } from "./storage";
 import type { Repertoire } from "./types";
 import { getTrainingHistory, TRAINING_HISTORY_KEY } from "@/lib/training/history";
@@ -67,22 +68,18 @@ export function importBackup(data: unknown): ImportBackupResult {
     return { ok: false, error: "Invalid backup format." };
   }
 
-  if (
-    !data.catalog.every(
-      (item) =>
-        item &&
-        typeof item === "object" &&
-        typeof (item as Repertoire).id === "string" &&
-        Array.isArray((item as Repertoire).games),
-    )
-  ) {
+  const migratedCatalog = data.catalog
+    .map((item) => migrateRepertoire(item))
+    .filter((item): item is Repertoire => item !== null && isValidRepertoire(item));
+
+  if (migratedCatalog.length !== data.catalog.length) {
     return { ok: false, error: "Catalog validation failed." };
   }
 
   try {
     localStorage.setItem(
       "chess:repertoire-catalog",
-      JSON.stringify(data.catalog),
+      JSON.stringify(migratedCatalog),
     );
     localStorage.setItem(
       TRAINING_HISTORY_KEY,
@@ -96,7 +93,7 @@ export function importBackup(data: unknown): ImportBackupResult {
   return {
     ok: true,
     counts: {
-      repertoires: data.catalog.length,
+      repertoires: migratedCatalog.length,
       history: data.trainingHistory.length,
       mastery: Object.keys(data.lineMastery).length,
     },

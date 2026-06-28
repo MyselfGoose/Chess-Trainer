@@ -1,15 +1,11 @@
 import type { StudyGame } from "@/lib/pgn";
+import { normalizeFen } from "@/lib/chess/fen";
 import { buildPath } from "@/lib/repertoires/treeBuilder";
 
 export interface TranspositionGroup {
   fen: string;
   nodeIds: string[];
   labels: string[];
-}
-
-export function normalizeFen(fen: string): string {
-  const parts = fen.split(" ");
-  return parts.slice(0, 4).join(" ");
 }
 
 function labelForNode(game: StudyGame, nodeId: string): string {

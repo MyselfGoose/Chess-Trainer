@@ -27,8 +27,25 @@ export {
   unregisterLine,
 } from "./treeBuilder";
 export type { RegisteredLine } from "./treeBuilder";
+export {
+  cloneSubtree,
+  collapseEmptyBranches,
+  deleteSubtree,
+  findEmptyBranches,
+  graftSubtree,
+} from "./treeMutations";
+export type { TreeMutationResult } from "./treeMutations";
+export {
+  bumpRepertoireVersion,
+  DEFAULT_REPERTOIRE_META,
+  isValidRepertoire,
+  isValidRepertoireMeta,
+  migrateRepertoire,
+} from "./meta";
 export type {
   Repertoire,
+  RepertoireChapter,
+  RepertoireMeta,
   RepertoireSource,
   BoardOrientation,
   StudySessionState,
