@@ -95,3 +95,20 @@ export function pgnColorToBrush(color: PgnAnnotationColor): AnnotationBrush {
       return "yellow";
   }
 }
+
+export function brushToPgnColor(brush: AnnotationBrush): PgnAnnotationColor {
+  switch (brush) {
+    case "blue":
+      return "B";
+    case "green":
+      return "G";
+    case "orange":
+      return "O";
+    case "red":
+      return "R";
+    case "yellow":
+      return "Y";
+    default:
+      return "Y";
+  }
+}

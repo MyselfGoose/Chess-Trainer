@@ -1,9 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Chess } from "chess.js";
 import type { Square } from "chess.js";
 
+import type { BoardAnnotation } from "@/lib/chess/annotations";
+import {
+  annotationsToPgnNode,
+} from "@/lib/chess/annotations";
 import { buildMovableDests, isPromotionMove } from "@/lib/chess/destinations";
 import type { PromotionPiece } from "@/lib/chess/types";
 import { computeLineStats } from "@/lib/pgn";
@@ -29,6 +33,30 @@ import {
   type Repertoire,
 } from "@/lib/repertoires";
 import {
+  collapseEmptyBranches,
+  findEmptyBranches,
+} from "@/lib/repertoires/treeMutations";
+import {
+  computePruneImpact,
+  pruneSubtree,
+  type PruneImpact,
+} from "@/lib/repertoires/pruneImpact";
+import {
+  updateNodeAnnotations,
+  updateNodeComment,
+} from "@/lib/repertoires/nodeEditor";
+import {
+  canRedo as stackCanRedo,
+  canUndo as stackCanUndo,
+  createEmptyUndoStack,
+  createSnapshot,
+  popRedo,
+  popUndo,
+  pushSnapshot,
+  type BuilderSnapshot,
+  type UndoStackState,
+} from "@/lib/repertoires/undoStack";
+import {
   applyMove,
   buildPath,
   canUndoMove,
@@ -52,6 +80,7 @@ export interface UseRepertoireBuilderResult {
   setName: (name: string) => void;
   game: StudyGame;
   currentNodeId: string;
+  currentNode: StudyNode | undefined;
   currentPath: StudyNode[];
   registeredLines: RegisteredLine[];
   registeredLeafIds: string[];
@@ -65,6 +94,10 @@ export interface UseRepertoireBuilderResult {
   canRegister: boolean;
   canSave: boolean;
   canUndo: boolean;
+  canDeleteFromHere: boolean;
+  canUndoEdit: boolean;
+  canRedoEdit: boolean;
+  emptyBranchCount: number;
   registerMessage: string | null;
   saveError: string | null;
   isSaving: boolean;
@@ -80,24 +113,103 @@ export interface UseRepertoireBuilderResult {
   registerCurrentLine: () => void;
   removeRegisteredLine: (leafId: string) => void;
   undoMove: () => void;
+  getPruneImpact: () => PruneImpact | null;
+  confirmDeleteFromHere: () => boolean;
+  collapseEmptyBranchesAction: () => number;
+  undoEdit: () => void;
+  redoEdit: () => void;
+  saveComment: (text: string) => void;
+  saveAnnotationsToNode: (sessionShapes: BoardAnnotation[]) => void;
+  hasUnsavedAnnotations: (sessionShapes: BoardAnnotation[]) => boolean;
   save: () => Repertoire | null;
 }
 
-function getNode(game: StudyGame, id: string): StudyNode | undefined {
-  return game.nodes[id];
-}
-
-function loadBuilderState(
-  repertoireId?: string,
-  initialName?: string,
-): {
+interface BuilderState {
   game: StudyGame;
   currentNodeId: string;
   tipNodeId: string;
   registeredLeafIds: string[];
   name: string;
   repertoireId?: string;
-} {
+  baseMetaVersion: number;
+}
+
+function getNode(game: StudyGame, id: string): StudyNode | undefined {
+  return game.nodes[id];
+}
+
+function toSnapshot(state: BuilderState): BuilderSnapshot {
+  return createSnapshot({
+    game: state.game,
+    registeredLeafIds: state.registeredLeafIds,
+    currentNodeId: state.currentNodeId,
+    tipNodeId: state.tipNodeId,
+  });
+}
+
+function resolveNodeAfterDelete(
+  game: StudyGame,
+  currentNodeId: string,
+  tipNodeId: string,
+  deletedNodeIds: string[],
+): { currentNodeId: string; tipNodeId: string } {
+  const deleted = new Set(deletedNodeIds);
+  let nextCurrent = currentNodeId;
+  let nextTip = tipNodeId;
+
+  if (deleted.has(nextCurrent)) {
+    const parent = game.nodes[nextCurrent]?.parentId;
+    nextCurrent =
+      parent && getNode(game, parent) ? parent : game.rootId;
+  }
+  if (deleted.has(nextTip) || !getNode(game, nextTip)) {
+    nextTip = getNode(game, nextCurrent) ? nextCurrent : game.rootId;
+  }
+
+  return { currentNodeId: nextCurrent, tipNodeId: nextTip };
+}
+
+function shapesMatchNode(
+  sessionShapes: BoardAnnotation[],
+  node: StudyNode | undefined,
+): boolean {
+  const { arrows, squares } = annotationsToPgnNode(sessionShapes);
+  const nodeArrows = node?.arrows ?? [];
+  const nodeSquares = node?.squares ?? [];
+
+  const arrowKey = (a: { from: string; to: string; color: string }) =>
+    `${a.color}${a.from}${a.to}`;
+  const squareKey = (s: { square: string; color: string }) =>
+    `${s.color}${s.square}`;
+
+  if (
+    arrows.length !== nodeArrows.length ||
+    squares.length !== nodeSquares.length
+  ) {
+    return false;
+  }
+
+  const sessionArrowKeys = new Set(arrows.map(arrowKey));
+  for (const arrow of nodeArrows) {
+    if (!sessionArrowKeys.has(arrowKey(arrow))) {
+      return false;
+    }
+  }
+
+  const sessionSquareKeys = new Set(squares.map(squareKey));
+  for (const square of nodeSquares) {
+    if (!sessionSquareKeys.has(squareKey(square))) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function loadBuilderState(
+  repertoireId?: string,
+  initialName?: string,
+): BuilderState {
   if (repertoireId) {
     const existing = getRepertoire(repertoireId);
     if (existing && existing.source === "created" && existing.games[0]) {
@@ -109,6 +221,7 @@ function loadBuilderState(
         registeredLeafIds: existing.registeredLeafIds,
         name: existing.name,
         repertoireId: existing.id,
+        baseMetaVersion: existing.meta.version,
       };
     }
   }
@@ -122,22 +235,46 @@ function loadBuilderState(
     registeredLeafIds: [],
     name,
     repertoireId,
+    baseMetaVersion: 1,
   };
 }
 
 export function useRepertoireBuilder(
   options: UseRepertoireBuilderOptions = {},
 ): UseRepertoireBuilderResult {
-  const [state, setState] = useState(() =>
+  const [state, setState] = useState<BuilderState>(() =>
     loadBuilderState(options.repertoireId, options.initialName),
   );
+  const [undoStack, setUndoStack] = useState<UndoStackState>(createEmptyUndoStack);
+  const [versionOffset, setVersionOffset] = useState(0);
   const [isDirty, setIsDirty] = useState(false);
   const [registerMessage, setRegisterMessage] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const { game, currentNodeId, tipNodeId, registeredLeafIds, name, repertoireId } =
-    state;
+  const stateRef = useRef(state);
+
+  useEffect(() => {
+    stateRef.current = state;
+  });
+
+  const {
+    game,
+    currentNodeId,
+    tipNodeId,
+    registeredLeafIds,
+    name,
+    repertoireId,
+    baseMetaVersion,
+  } = state;
+
+  const pushUndoSnapshot = useCallback(() => {
+    setUndoStack((stack) => pushSnapshot(stack, toSnapshot(stateRef.current)));
+  }, []);
+
+  const bumpVersion = useCallback(() => {
+    setVersionOffset((offset) => offset + 1);
+  }, []);
 
   useEffect(() => {
     if (!isDirty) {
@@ -163,6 +300,10 @@ export function useRepertoireBuilder(
   );
 
   const lineStats = useMemo(() => computeLineStats(game), [game]);
+  const emptyBranchCount = useMemo(
+    () => findEmptyBranches(game).length,
+    [game],
+  );
 
   const boardFen = currentNode?.fen ?? game.startFen;
 
@@ -195,6 +336,7 @@ export function useRepertoireBuilder(
     !registeredLeafIds.includes(currentNodeId);
   const canSave = registeredLeafIds.length > 0 && name.trim().length > 0;
   const canUndo = canUndoMove(game, currentNodeId, registeredLeafIds);
+  const canDeleteFromHere = currentNodeId !== game.rootId;
 
   const navigateToNode = useCallback((nodeId: string) => {
     setState((prev) => {
@@ -247,6 +389,10 @@ export function useRepertoireBuilder(
       if (!result) {
         return false;
       }
+      if (result.created) {
+        pushUndoSnapshot();
+        bumpVersion();
+      }
       const node = result.game.nodes[result.nodeId];
       if (node?.san) {
         playChessMoveSound({ san: node.san });
@@ -265,7 +411,7 @@ export function useRepertoireBuilder(
       setRegisterMessage(null);
       return true;
     },
-    [currentNodeId, game],
+    [bumpVersion, currentNodeId, game, pushUndoSnapshot],
   );
 
   const attemptMove = useCallback(
@@ -323,6 +469,8 @@ export function useRepertoireBuilder(
     if (!result) {
       return;
     }
+    pushUndoSnapshot();
+    bumpVersion();
     setState((prev) => {
       const nextTip = getNode(result.game, prev.tipNodeId)
         ? prev.tipNodeId
@@ -336,7 +484,185 @@ export function useRepertoireBuilder(
     });
     setIsDirty(true);
     setRegisterMessage(null);
-  }, [currentNodeId, game]);
+  }, [bumpVersion, currentNodeId, game, pushUndoSnapshot]);
+
+  const getPruneImpact = useCallback((): PruneImpact | null => {
+    return computePruneImpact(game, currentNodeId, registeredLeafIds);
+  }, [currentNodeId, game, registeredLeafIds]);
+
+  const confirmDeleteFromHere = useCallback((): boolean => {
+    const beforeNode = getNode(game, currentNodeId);
+    const parentId = beforeNode?.parentId ?? game.rootId;
+    const result = pruneSubtree(game, currentNodeId, registeredLeafIds);
+    if (!result) {
+      return false;
+    }
+
+    pushUndoSnapshot();
+    bumpVersion();
+
+    const resolved = resolveNodeAfterDelete(
+      result.game,
+      currentNodeId,
+      tipNodeId,
+      result.deletedNodeIds,
+    );
+    const fallbackCurrent =
+      result.deletedNodeIds.includes(currentNodeId) &&
+      parentId &&
+      getNode(result.game, parentId)
+        ? parentId
+        : resolved.currentNodeId;
+
+    setState((prev) => ({
+      ...prev,
+      game: result.game,
+      registeredLeafIds: result.registeredLeafIds,
+      currentNodeId: fallbackCurrent,
+      tipNodeId: resolved.tipNodeId,
+    }));
+    setIsDirty(true);
+    setRegisterMessage(null);
+    return true;
+  }, [
+    bumpVersion,
+    currentNodeId,
+    game,
+    pushUndoSnapshot,
+    registeredLeafIds,
+    tipNodeId,
+  ]);
+
+  const collapseEmptyBranchesAction = useCallback((): number => {
+    const beforeCount = Object.keys(game.nodes).length;
+    const collapsed = collapseEmptyBranches(game);
+    const afterCount = Object.keys(collapsed.nodes).length;
+    const removed = beforeCount - afterCount;
+    if (removed === 0) {
+      return 0;
+    }
+
+    pushUndoSnapshot();
+    bumpVersion();
+
+    const emptyIds = findEmptyBranches(game);
+    const deletedSet = new Set(
+      Object.keys(game.nodes).filter((id) => !collapsed.nodes[id]),
+    );
+    void emptyIds;
+
+    const nextRegistered = registeredLeafIds.filter((id) => !deletedSet.has(id));
+    const resolved = resolveNodeAfterDelete(
+      collapsed,
+      currentNodeId,
+      tipNodeId,
+      [...deletedSet],
+    );
+
+    setState((prev) => ({
+      ...prev,
+      game: collapsed,
+      registeredLeafIds: nextRegistered,
+      currentNodeId: resolved.currentNodeId,
+      tipNodeId: resolved.tipNodeId,
+    }));
+    setIsDirty(true);
+    return removed;
+  }, [
+    bumpVersion,
+    currentNodeId,
+    game,
+    pushUndoSnapshot,
+    registeredLeafIds,
+    tipNodeId,
+  ]);
+
+  const undoEdit = useCallback(() => {
+    const current = toSnapshot(stateRef.current);
+    setUndoStack((stack) => {
+      const result = popUndo(stack, current);
+      if (!result) {
+        return stack;
+      }
+      setState((prev) => ({
+        ...prev,
+        game: result.restored.game,
+        registeredLeafIds: result.restored.registeredLeafIds,
+        currentNodeId: result.restored.currentNodeId,
+        tipNodeId: result.restored.tipNodeId,
+      }));
+      setIsDirty(true);
+      return result.stack;
+    });
+  }, []);
+
+  const redoEdit = useCallback(() => {
+    const current = toSnapshot(stateRef.current);
+    setUndoStack((stack) => {
+      const result = popRedo(stack, current);
+      if (!result) {
+        return stack;
+      }
+      setState((prev) => ({
+        ...prev,
+        game: result.restored.game,
+        registeredLeafIds: result.restored.registeredLeafIds,
+        currentNodeId: result.restored.currentNodeId,
+        tipNodeId: result.restored.tipNodeId,
+      }));
+      setIsDirty(true);
+      return result.stack;
+    });
+  }, []);
+
+  const saveComment = useCallback(
+    (text: string) => {
+      const node = getNode(game, currentNodeId);
+      const trimmed = text.trim();
+      const nextComment = trimmed || undefined;
+      if (node?.comment === nextComment) {
+        return;
+      }
+      pushUndoSnapshot();
+      bumpVersion();
+      setState((prev) => ({
+        ...prev,
+        game: updateNodeComment(prev.game, prev.currentNodeId, text),
+      }));
+      setIsDirty(true);
+    },
+    [bumpVersion, currentNodeId, game, pushUndoSnapshot],
+  );
+
+  const saveAnnotationsToNode = useCallback(
+    (sessionShapes: BoardAnnotation[]) => {
+      const node = getNode(game, currentNodeId);
+      if (shapesMatchNode(sessionShapes, node)) {
+        return;
+      }
+      const { arrows, squares } = annotationsToPgnNode(sessionShapes);
+      pushUndoSnapshot();
+      bumpVersion();
+      setState((prev) => ({
+        ...prev,
+        game: updateNodeAnnotations(
+          prev.game,
+          prev.currentNodeId,
+          arrows,
+          squares,
+        ),
+      }));
+      setIsDirty(true);
+    },
+    [bumpVersion, currentNodeId, game, pushUndoSnapshot],
+  );
+
+  const hasUnsavedAnnotations = useCallback(
+    (sessionShapes: BoardAnnotation[]) => {
+      return !shapesMatchNode(sessionShapes, getNode(game, currentNodeId));
+    },
+    [currentNodeId, game],
+  );
 
   const setName = useCallback((nextName: string) => {
     setState((prev) => ({ ...prev, name: nextName }));
@@ -355,6 +681,7 @@ export function useRepertoireBuilder(
       ...game,
       meta: { ...game.meta, Event: trimmedName },
     };
+    const nextVersion = baseMetaVersion + versionOffset;
 
     try {
       if (repertoireId) {
@@ -362,9 +689,14 @@ export function useRepertoireBuilder(
           name: trimmedName,
           games: [updatedGame],
           registeredLeafIds,
+          meta: { version: nextVersion },
         });
         setIsSaving(false);
         setIsDirty(false);
+        setVersionOffset(0);
+        if (updated) {
+          setState((prev) => ({ ...prev, baseMetaVersion: updated.meta.version }));
+        }
         return updated;
       }
 
@@ -373,9 +705,16 @@ export function useRepertoireBuilder(
         source: "created",
         games: [updatedGame],
         registeredLeafIds,
+        meta: { version: nextVersion },
       });
       setIsSaving(false);
       setIsDirty(false);
+      setVersionOffset(0);
+      setState((prev) => ({
+        ...prev,
+        repertoireId: created.id,
+        baseMetaVersion: created.meta.version,
+      }));
       return created;
     } catch (error) {
       setSaveError(
@@ -386,7 +725,15 @@ export function useRepertoireBuilder(
       setIsSaving(false);
       return null;
     }
-  }, [canSave, game, name, registeredLeafIds, repertoireId]);
+  }, [
+    baseMetaVersion,
+    canSave,
+    game,
+    name,
+    registeredLeafIds,
+    repertoireId,
+    versionOffset,
+  ]);
 
   const navigation = useMemo((): MoveNavigationHandlers => {
     return {
@@ -414,6 +761,7 @@ export function useRepertoireBuilder(
     setName,
     game,
     currentNodeId,
+    currentNode,
     currentPath,
     registeredLines,
     registeredLeafIds,
@@ -427,6 +775,10 @@ export function useRepertoireBuilder(
     canRegister,
     canSave,
     canUndo,
+    canDeleteFromHere,
+    canUndoEdit: stackCanUndo(undoStack),
+    canRedoEdit: stackCanRedo(undoStack),
+    emptyBranchCount,
     registerMessage,
     saveError,
     isSaving,
@@ -442,6 +794,14 @@ export function useRepertoireBuilder(
     registerCurrentLine,
     removeRegisteredLine,
     undoMove,
+    getPruneImpact,
+    confirmDeleteFromHere,
+    collapseEmptyBranchesAction,
+    undoEdit,
+    redoEdit,
+    saveComment,
+    saveAnnotationsToNode,
+    hasUnsavedAnnotations,
     save,
   };
 }

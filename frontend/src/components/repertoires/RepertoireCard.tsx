@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 
+import { DuplicateForkModal } from "@/components/repertoires/DuplicateForkModal";
+
 import { computeLineStats } from "@/lib/pgn";
 import { repertoireToPgn, downloadPgnFile } from "@/lib/pgn/export";
 import {
@@ -50,6 +52,7 @@ export function RepertoireCard({ repertoire, onRefresh }: RepertoireCardProps) {
   const router = useRouter();
   const [showRename, setShowRename] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const [showFork, setShowFork] = useState(false);
   const [name, setName] = useState(repertoire.name);
   const [renameError, setRenameError] = useState<string | null>(null);
   const stats = aggregateStats(repertoire);
@@ -204,7 +207,15 @@ export function RepertoireCard({ repertoire, onRefresh }: RepertoireCardProps) {
           >
             Edit
           </button>
-        ) : null}
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowFork(true)}
+            className="rounded-lg bg-surface px-3 py-1.5 text-sm font-medium text-foreground/90 ring-1 ring-border transition hover:bg-background"
+          >
+            Duplicate &amp; Edit
+          </button>
+        )}
         <button
           type="button"
           onClick={() => {
@@ -253,6 +264,17 @@ export function RepertoireCard({ repertoire, onRefresh }: RepertoireCardProps) {
             </button>
           </div>
         </div>
+      ) : null}
+
+      {showFork ? (
+        <DuplicateForkModal
+          repertoire={repertoire}
+          onComplete={(newId) => {
+            setShowFork(false);
+            router.push(`/repertoires/${newId}/edit`);
+          }}
+          onCancel={() => setShowFork(false)}
+        />
       ) : null}
     </article>
   );

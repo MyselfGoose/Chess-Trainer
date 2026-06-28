@@ -1,7 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import type { Square } from "chess.js";
 
 import { ChessBoard } from "@/components/chess/ChessBoard";
@@ -12,7 +19,10 @@ import {
 import { PromotionDialog } from "@/components/chess/PromotionDialog";
 import { PgnLineStats } from "@/components/pgn/PgnLineStats";
 import { PgnPathBar } from "@/components/pgn/PgnPathBar";
+import { BuilderPositionNotes } from "@/components/repertoires/BuilderPositionNotes";
+import { DeleteSubtreeModal } from "@/components/repertoires/DeleteSubtreeModal";
 import type { PromotionPiece } from "@/lib/chess/types";
+import { annotationsFromPgnNode } from "@/lib/chess/annotations";
 import {
   BUILDER_ORIENTATION_KEY,
   loadOrientationPreference,
@@ -21,6 +31,7 @@ import {
 } from "@/lib/chess/orientationPreference";
 import { useBoardAnnotationState } from "@/hooks/useBoardAnnotationState";
 import { useRepertoireBuilder } from "@/hooks/useRepertoireBuilder";
+import type { PruneImpact } from "@/lib/repertoires";
 import { REPERTOIRE_NAME_MAX_LENGTH } from "@/lib/repertoires";
 import type { BoardOrientation } from "@/lib/repertoires/types";
 
@@ -75,10 +86,78 @@ export function RepertoireBuilder({
   );
   const [pendingPromotion, setPendingPromotion] =
     useState<PendingPromotion | null>(null);
+  const [deleteImpact, setDeleteImpact] = useState<PruneImpact | null>(null);
 
   useEffect(() => {
     saveOrientationPreference(BUILDER_ORIENTATION_KEY, orientation);
   }, [orientation]);
+
+  const pgnAutoShapes = useMemo(
+    () =>
+      annotationsFromPgnNode(
+        builder.currentNode?.arrows,
+        builder.currentNode?.squares,
+      ),
+    [builder.currentNode?.arrows, builder.currentNode?.squares],
+  );
+
+  const hasUnsavedAnnotations = builder.hasUnsavedAnnotations(
+    boardAnnotations.shapes,
+  );
+
+  const persistAnnotationsIfNeeded = useCallback(() => {
+    if (builder.hasUnsavedAnnotations(boardAnnotations.shapes)) {
+      builder.saveAnnotationsToNode(boardAnnotations.shapes);
+      boardAnnotations.clearAnnotations();
+    }
+  }, [boardAnnotations, builder]);
+
+  const navigateWithAnnotationSave = useCallback(
+    (navigate: () => void) => {
+      persistAnnotationsIfNeeded();
+      navigate();
+      boardAnnotations.clearAnnotations();
+    },
+    [boardAnnotations, persistAnnotationsIfNeeded],
+  );
+
+  const wrappedGoToNode = useCallback(
+    (nodeId: string) => {
+      navigateWithAnnotationSave(() => builder.goToNode(nodeId));
+    },
+    [builder, navigateWithAnnotationSave],
+  );
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target;
+      if (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement
+      ) {
+        return;
+      }
+
+      const mod = event.metaKey || event.ctrlKey;
+      if (!mod) {
+        return;
+      }
+
+      if (event.key === "z" && event.shiftKey) {
+        event.preventDefault();
+        builder.redoEdit();
+        return;
+      }
+
+      if (event.key === "z") {
+        event.preventDefault();
+        builder.undoEdit();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [builder]);
 
   const flipBoard = useCallback(() => {
     setOrientation((current) => toggleOrientation(current));
@@ -90,9 +169,11 @@ export function RepertoireBuilder({
         setPendingPromotion({ from, to });
         return false;
       }
+      persistAnnotationsIfNeeded();
+      boardAnnotations.clearAnnotations();
       return builder.attemptMove(from, to);
     },
-    [builder],
+    [boardAnnotations, builder, persistAnnotationsIfNeeded],
   );
 
   const completePromotion = useCallback(
@@ -100,6 +181,8 @@ export function RepertoireBuilder({
       if (!pendingPromotion) {
         return;
       }
+      persistAnnotationsIfNeeded();
+      boardAnnotations.clearAnnotations();
       builder.completePromotion(
         pendingPromotion.from,
         pendingPromotion.to,
@@ -107,18 +190,46 @@ export function RepertoireBuilder({
       );
       setPendingPromotion(null);
     },
-    [builder, pendingPromotion],
+    [boardAnnotations, builder, pendingPromotion, persistAnnotationsIfNeeded],
   );
 
   const handleSaveClick = useCallback(() => {
     if (!builder.canSave) {
       return;
     }
+    persistAnnotationsIfNeeded();
     const saved = builder.save();
     if (saved) {
       router.push("/repertoires");
     }
-  }, [builder, router]);
+  }, [builder, persistAnnotationsIfNeeded, router]);
+
+  const handleDeleteRequest = useCallback(() => {
+    const impact = builder.getPruneImpact();
+    if (impact) {
+      setDeleteImpact(impact);
+    }
+  }, [builder]);
+
+  const handleDeleteConfirm = useCallback(() => {
+    builder.confirmDeleteFromHere();
+    setDeleteImpact(null);
+    boardAnnotations.clearAnnotations();
+  }, [boardAnnotations, builder]);
+
+  const handleCollapseEmpty = useCallback(() => {
+    if (builder.emptyBranchCount === 0) {
+      return;
+    }
+    const confirmed = window.confirm(
+      `Remove ${builder.emptyBranchCount} empty branch${builder.emptyBranchCount === 1 ? "" : "es"} with no comments or annotations?`,
+    );
+    if (!confirmed) {
+      return;
+    }
+    builder.collapseEmptyBranchesAction();
+    boardAnnotations.clearAnnotations();
+  }, [boardAnnotations, builder]);
 
   const turnColor = builder.turnLabel === "White" ? "white" : "black";
 
@@ -162,7 +273,9 @@ export function RepertoireBuilder({
               onRepertoireMove={handleMove}
               orientation={orientation}
               annotations={{
-                ...boardAnnotations.annotations,
+                shapes: boardAnnotations.shapes,
+                autoShapes: pgnAutoShapes,
+                onChange: boardAnnotations.annotations.onChange,
                 enabled: pendingPromotion === null,
               }}
             />
@@ -170,7 +283,13 @@ export function RepertoireBuilder({
         </BoardFrame>
         <MoveNavigationHints />
         <MoveNavigationBindings
-          navigation={builder.navigation}
+          navigation={{
+            ...builder.navigation,
+            goBack: () => navigateWithAnnotationSave(builder.goBack),
+            goForward: () => navigateWithAnnotationSave(builder.goForward),
+            goToStart: () => navigateWithAnnotationSave(builder.goToStart),
+            goToEnd: () => navigateWithAnnotationSave(builder.goToEnd),
+          }}
           enabled={pendingPromotion === null}
           wheelTargetRef={boardNavRef}
         />
@@ -180,7 +299,18 @@ export function RepertoireBuilder({
         <PgnPathBar
           path={builder.currentPath}
           currentNodeId={builder.currentNodeId}
-          onSelect={builder.goToNode}
+          onSelect={wrappedGoToNode}
+        />
+
+        <BuilderPositionNotes
+          currentNode={builder.currentNode}
+          isAtRoot={builder.currentNodeId === builder.game.rootId}
+          hasUnsavedAnnotations={hasUnsavedAnnotations}
+          onSaveComment={builder.saveComment}
+          onSaveAnnotations={() => {
+            builder.saveAnnotationsToNode(boardAnnotations.shapes);
+            boardAnnotations.clearAnnotations();
+          }}
         />
 
         <div className="rounded-lg bg-background p-3 ring-1 ring-border">
@@ -211,14 +341,51 @@ export function RepertoireBuilder({
           </p>
         ) : null}
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={builder.undoMove}
             disabled={!builder.canUndo}
-            className="flex-1 rounded-md bg-surface-muted px-3 py-2 text-sm font-medium text-foreground/90 transition hover:bg-surface-muted disabled:opacity-40"
+            className="min-h-11 flex-1 rounded-md bg-surface-muted px-3 py-2 text-sm font-medium text-foreground/90 transition hover:bg-surface disabled:opacity-40"
           >
             Undo move
+          </button>
+          <button
+            type="button"
+            onClick={builder.undoEdit}
+            disabled={!builder.canUndoEdit}
+            className="min-h-11 flex-1 rounded-md bg-surface-muted px-3 py-2 text-sm font-medium text-foreground/90 transition hover:bg-surface disabled:opacity-40"
+            title="Undo edit (Ctrl+Z)"
+          >
+            Undo edit
+          </button>
+          <button
+            type="button"
+            onClick={builder.redoEdit}
+            disabled={!builder.canRedoEdit}
+            className="min-h-11 flex-1 rounded-md bg-surface-muted px-3 py-2 text-sm font-medium text-foreground/90 transition hover:bg-surface disabled:opacity-40"
+            title="Redo edit (Ctrl+Shift+Z)"
+          >
+            Redo
+          </button>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={handleDeleteRequest}
+            disabled={!builder.canDeleteFromHere}
+            className="min-h-11 flex-1 rounded-md bg-danger-muted px-3 py-2 text-sm font-medium text-danger transition hover:bg-danger-muted/80 disabled:opacity-40"
+          >
+            Delete from here
+          </button>
+          <button
+            type="button"
+            onClick={handleCollapseEmpty}
+            disabled={builder.emptyBranchCount === 0}
+            className="min-h-11 flex-1 rounded-md bg-surface-muted px-3 py-2 text-sm font-medium text-foreground/90 transition hover:bg-surface disabled:opacity-40"
+          >
+            Collapse empty ({builder.emptyBranchCount})
           </button>
         </div>
 
@@ -239,7 +406,7 @@ export function RepertoireBuilder({
                 >
                   <button
                     type="button"
-                    onClick={() => builder.goToNode(line.leafId)}
+                    onClick={() => wrappedGoToNode(line.leafId)}
                     className="min-w-0 flex-1 text-left font-mono text-xs text-foreground hover:text-accent-foreground"
                   >
                     <span className="font-sans text-muted-foreground/80">
@@ -273,6 +440,14 @@ export function RepertoireBuilder({
           color={turnColor}
           onSelect={completePromotion}
           onCancel={() => setPendingPromotion(null)}
+        />
+      ) : null}
+
+      {deleteImpact ? (
+        <DeleteSubtreeModal
+          impact={deleteImpact}
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setDeleteImpact(null)}
         />
       ) : null}
     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { use, useCallback, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Square } from "chess.js";
 
@@ -10,6 +11,7 @@ import {
   MoveNavigationHints,
 } from "@/components/chess/MoveNavigationBindings";
 import { PromotionDialog } from "@/components/chess/PromotionDialog";
+import { DuplicateForkModal } from "@/components/repertoires/DuplicateForkModal";
 import { PgnStudyMovesPanel } from "@/components/pgn/PgnStudyMovesPanel";
 import { PgnStudyToolsPanel } from "@/components/pgn/PgnStudyToolsPanel";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -61,11 +63,13 @@ export default function StudyPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const router = useRouter();
   const study = usePgnStudy(id);
   const boardAnnotations = useBoardAnnotationState();
   const boardNavRef = useRef<HTMLDivElement>(null);
   const [studyPromotion, setStudyPromotion] =
     useState<StudyPendingPromotion | null>(null);
+  const [showFork, setShowFork] = useState(false);
 
   const {
     setOrientation: setStudyOrientation,
@@ -213,6 +217,15 @@ export default function StudyPage({
           </div>
           <div className="ml-auto flex shrink-0 flex-wrap items-center gap-2">
             <FlipBoardButton orientation={study.orientation} onFlip={flipBoard} />
+            {study.repertoire.source === "imported" ? (
+              <button
+                type="button"
+                onClick={() => setShowFork(true)}
+                className="rounded-md bg-surface px-3 py-1.5 text-sm font-medium text-foreground/90 ring-1 ring-border transition hover:bg-background"
+              >
+                Duplicate &amp; Edit
+              </button>
+            ) : null}
             {trainFromHereHref ? (
               <Link
                 href={trainFromHereHref}
@@ -278,6 +291,17 @@ export default function StudyPage({
           color={studyTurnColor}
           onSelect={completeStudyPromotion}
           onCancel={cancelStudyPromotion}
+        />
+      ) : null}
+
+      {showFork && study.repertoire ? (
+        <DuplicateForkModal
+          repertoire={study.repertoire}
+          onComplete={(newId) => {
+            setShowFork(false);
+            router.push(`/repertoires/${newId}/edit`);
+          }}
+          onCancel={() => setShowFork(false)}
         />
       ) : null}
     </div>

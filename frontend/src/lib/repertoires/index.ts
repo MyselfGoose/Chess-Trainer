@@ -28,6 +28,36 @@ export {
 } from "./treeBuilder";
 export type { RegisteredLine } from "./treeBuilder";
 export {
+  cloneStudyGame,
+  forkRepertoire,
+} from "./fork";
+export type {
+  CloneGameResult,
+  ForkRegisterStrategy,
+  ForkRepertoireOptions,
+} from "./fork";
+export {
+  removeRegisteredLeaves,
+  updateNodeAnnotations,
+  updateNodeComment,
+} from "./nodeEditor";
+export {
+  computePruneImpact,
+  pruneSubtree,
+} from "./pruneImpact";
+export type { PruneImpact } from "./pruneImpact";
+export {
+  canRedo,
+  canUndo,
+  createEmptyUndoStack,
+  createSnapshot,
+  MAX_UNDO_SNAPSHOTS,
+  popRedo,
+  popUndo,
+  pushSnapshot,
+} from "./undoStack";
+export type { BuilderSnapshot, UndoStackState } from "./undoStack";
+export {
   cloneSubtree,
   collapseEmptyBranches,
   deleteSubtree,

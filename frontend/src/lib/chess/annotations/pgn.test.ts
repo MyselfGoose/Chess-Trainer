@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   annotationsFromPgnNode,
+  annotationsToPgnNode,
   arrowsFromPgn,
   squaresFromPgn,
 } from "./pgn";
@@ -41,5 +42,25 @@ describe("pgn annotations", () => {
 
   it("returns empty for undefined inputs", () => {
     expect(annotationsFromPgnNode(undefined, undefined)).toEqual([]);
+  });
+
+  it("round-trips board annotations to PGN node format", () => {
+    const original = annotationsFromPgnNode(
+      [
+        { from: "e2", to: "e4", color: "G" },
+        { from: "g1", to: "f3", color: "R" },
+      ],
+      [{ square: "d5", color: "Y" }],
+    );
+    const { arrows, squares } = annotationsToPgnNode(original);
+    expect(arrows).toEqual([
+      { from: "e2", to: "e4", color: "G" },
+      { from: "g1", to: "f3", color: "R" },
+    ]);
+    expect(squares).toEqual([{ square: "d5", color: "Y" }]);
+    const roundTrip = annotationsFromPgnNode(arrows, squares);
+    expect(roundTrip).toHaveLength(3);
+    expect(roundTrip.filter((shape) => shape.type === "arrow")).toHaveLength(2);
+    expect(roundTrip.filter((shape) => shape.type === "square")).toHaveLength(1);
   });
 });

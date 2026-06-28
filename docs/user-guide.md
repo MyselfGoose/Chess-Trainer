@@ -75,6 +75,8 @@ Names default to the filename (without `.pgn`) or the PGN `Event` header.
 
 Imported repertoires are tagged `source: imported`. **All leaf lines** in the variation tree are available for training.
 
+Imported repertoires are read-only in the builder. Use **Duplicate & Edit** (on the repertoire card or study page) to create an editable **Created** copy. The original imported file is not modified.
+
 ---
 
 ## Repertoire library
@@ -99,7 +101,19 @@ Each card shows:
 | **Study** | Open interactive study mode |
 | **Train** | Open training setup for this repertoire |
 | **Edit** | Open the builder (created repertoires only) |
+| **Duplicate & Edit** | Fork an imported repertoire into an editable copy (imported only) |
 | **Delete** | Remove from local storage (irreversible) |
+
+### Duplicate & Edit (imported repertoires)
+
+Creates a new **Created** repertoire from an imported PGN:
+
+1. Click **Duplicate & Edit** on the card or study header.
+2. Choose a name (default: `"{name} (editable)"`).
+3. Choose **Register lines**: **All leaves** (train every line immediately) or **None** (register manually in the builder).
+4. You are taken to the builder for the new copy.
+
+The original imported repertoire is unchanged. The copy records `forkedFromId` in metadata for traceability.
 
 ### Creating a new repertoire
 
@@ -140,6 +154,28 @@ Registered lines appear in the side panel list. Click a line to jump to its fina
 - No registered line passes through the node being removed
 
 Undo is destructive — it removes the node from the tree. For non-destructive review, use [move navigation](./keyboard-shortcuts.md) instead.
+
+### Delete branch & collapse empty
+
+- **Delete from here** removes the current node and all moves below it. A confirmation shows how many positions and registered lines will be removed. The root position cannot be deleted.
+- **Collapse empty** removes leaf nodes that have no comments or annotations (dead-end branches).
+
+Use **Undo edit** (Ctrl+Z / Cmd+Z) to restore the tree after delete or collapse. **Redo** is Ctrl+Shift+Z / Cmd+Shift+Z.
+
+### Position notes & arrows
+
+In the builder sidebar:
+
+- **Position notes** — text comments for the current node. Comments auto-save after you pause typing (~500 ms).
+- Draw arrows and square highlights on the board, then click **Save arrows to position** to persist them on the node. Drawings are also saved automatically when you navigate to another move.
+- Saved comments and arrows export with the repertoire PGN and appear in study mode.
+
+### Undo edit vs undo move
+
+| Control | Scope |
+|---------|--------|
+| **Undo move** | Removes the last leaf move only (same rules as before) |
+| **Undo edit** (Ctrl+Z) | Reverts structural edits: new moves, deletes, comments, saved arrows (up to 20 steps) |
 
 ### Variations
 
@@ -182,6 +218,10 @@ Your current node and selected game index are saved per repertoire. Returning to
 ### Flip board
 
 Use **Flip** to change orientation (White or Black below). Orientation is per-session and not persisted.
+
+### Duplicate & Edit
+
+Imported repertoires show **Duplicate & Edit** in the study header — same flow as on the repertoire card.
 
 ---
 

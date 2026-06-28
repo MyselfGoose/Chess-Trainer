@@ -1,6 +1,7 @@
 export {
   arrowBrushFromModifiers,
   BRUSH_STYLES,
+  brushToPgnColor,
   pgnColorToBrush,
   squareBrushFromModifiers,
 } from "./colors";
@@ -13,6 +14,7 @@ export {
 export type { BoardOrientation, Point } from "./coordinates";
 export {
   annotationsFromPgnNode,
+  annotationsToPgnNode,
   arrowsFromPgn,
   squaresFromPgn,
 } from "./pgn";
