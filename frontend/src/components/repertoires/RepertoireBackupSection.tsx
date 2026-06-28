@@ -1,15 +1,17 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   downloadBackupFile,
   importBackup,
   type ImportBackupResult,
 } from "@/lib/repertoires/backup";
+import { playNotificationSound } from "@/lib/sounds/feedbackSounds";
 import {
   computeStorageStats,
   formatBytes,
+  type StorageStats,
 } from "@/lib/repertoires/storageStats";
 
 export function RepertoireBackupSection() {
@@ -17,11 +19,17 @@ export function RepertoireBackupSection() {
   const [importSuccess, setImportSuccess] = useState<string | null>(null);
   const [confirmText, setConfirmText] = useState("");
   const [pendingImport, setPendingImport] = useState<unknown>(null);
+  const [stats, setStats] = useState<StorageStats | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const stats = computeStorageStats();
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- client-only localStorage stats */
+    setStats(computeStorageStats());
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, []);
+
   const catalogPercent =
-    stats.catalogLimitBytes > 0
+    stats && stats.catalogLimitBytes > 0
       ? (stats.catalogBytes / stats.catalogLimitBytes) * 100
       : 0;
   const barColor =
@@ -49,7 +57,7 @@ export function RepertoireBackupSection() {
       return;
     }
     if (confirmText !== "DELETE") {
-      setImportError('Type DELETE to confirm full restore.');
+      setImportError("Type DELETE to confirm full restore.");
       return;
     }
     const result: ImportBackupResult = importBackup(pendingImport);
@@ -60,6 +68,7 @@ export function RepertoireBackupSection() {
     setImportSuccess(
       `Restored ${result.counts.repertoires} repertoires, ${result.counts.history} sessions, ${result.counts.mastery} mastery records.`,
     );
+    playNotificationSound();
     setPendingImport(null);
     setConfirmText("");
     window.location.reload();
@@ -75,8 +84,10 @@ export function RepertoireBackupSection() {
       <div className="mt-4">
         <div className="flex justify-between text-xs text-muted-foreground">
           <span>Catalog usage</span>
-          <span>
-            {formatBytes(stats.catalogBytes)} / {formatBytes(stats.catalogLimitBytes)}
+          <span suppressHydrationWarning>
+            {stats
+              ? `${formatBytes(stats.catalogBytes)} / ${formatBytes(stats.catalogLimitBytes)}`
+              : "—"}
           </span>
         </div>
         <div className="mt-1 h-2 overflow-hidden rounded-full bg-border">
@@ -85,8 +96,8 @@ export function RepertoireBackupSection() {
             style={{ width: `${Math.min(catalogPercent, 100)}%` }}
           />
         </div>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Total chess:* storage: {formatBytes(stats.totalBytes)}
+        <p className="mt-1 text-xs text-muted-foreground" suppressHydrationWarning>
+          Total chess:* storage: {stats ? formatBytes(stats.totalBytes) : "—"}
         </p>
       </div>
 
@@ -94,14 +105,14 @@ export function RepertoireBackupSection() {
         <button
           type="button"
           onClick={() => downloadBackupFile()}
-          className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white"
+          className="btn-primary"
         >
           Export backup
         </button>
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="rounded-lg bg-surface px-4 py-2 text-sm font-semibold text-foreground ring-1 ring-border-strong"
+          className="btn-secondary"
         >
           Import backup
         </button>
@@ -123,7 +134,7 @@ export function RepertoireBackupSection() {
         <p className="mt-3 text-sm text-danger">{importError}</p>
       ) : null}
       {importSuccess ? (
-        <p className="mt-3 text-sm text-accent">{importSuccess}</p>
+        <p className="mt-3 text-sm text-success">{importSuccess}</p>
       ) : null}
 
       {pendingImport ? (
@@ -136,20 +147,20 @@ export function RepertoireBackupSection() {
             value={confirmText}
             onChange={(event) => setConfirmText(event.target.value)}
             placeholder="DELETE"
-            className="mt-2 w-full rounded-md border border-amber-300 px-3 py-2 text-sm"
+            className="app-input mt-2"
           />
           <div className="mt-2 flex gap-2">
             <button
               type="button"
               onClick={confirmImport}
-              className="rounded-md bg-warning px-3 py-1.5 text-sm font-medium text-white"
+              className="rounded-md bg-warning px-3 py-1.5 text-sm font-medium text-white transition hover:opacity-90"
             >
               Confirm import
             </button>
             <button
               type="button"
               onClick={() => setPendingImport(null)}
-              className="rounded-md px-3 py-1.5 text-sm text-muted-foreground"
+              className="btn-ghost min-h-0 px-3 py-1.5"
             >
               Cancel
             </button>

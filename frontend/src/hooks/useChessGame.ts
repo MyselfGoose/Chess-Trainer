@@ -5,6 +5,7 @@ import type { Move, Square } from "chess.js";
 
 import { isPromotionMove } from "@/lib/chess/destinations";
 import { ChessGame } from "@/lib/chess/game";
+import { playChessMoveSound } from "@/lib/sounds/feedbackSounds";
 import type {
   ChessGameSnapshot,
   PendingPromotion,
@@ -82,6 +83,12 @@ export function useChessGame(): UseChessGameResult {
     (move: Move) => {
       const nextLastMove: [Square, Square] = [move.from, move.to];
       setPendingPromotion(null);
+      playChessMoveSound({
+        san: move.san,
+        captured: move.captured,
+        promotion: move.promotion,
+        flags: move.flags,
+      });
       pushHistoryEntry({
         fen: chess.getFen(),
         lastMove: nextLastMove,

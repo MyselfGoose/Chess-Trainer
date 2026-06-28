@@ -18,6 +18,10 @@ import {
 } from "@/lib/navigation/treeNavigation";
 import type { MoveNavigationHandlers } from "@/hooks/useMoveNavigation";
 import {
+  playChessMoveSound,
+  playNotificationSound,
+} from "@/lib/sounds/feedbackSounds";
+import {
   createRepertoire,
   getRepertoire,
   RepertoireStorageError,
@@ -243,6 +247,10 @@ export function useRepertoireBuilder(
       if (!result) {
         return false;
       }
+      const node = result.game.nodes[result.nodeId];
+      if (node?.san) {
+        playChessMoveSound({ san: node.san });
+      }
       setState((prev) => ({
         ...prev,
         game: result.game,
@@ -298,6 +306,7 @@ export function useRepertoireBuilder(
     }));
     setIsDirty(true);
     setRegisterMessage("Line registered.");
+    playNotificationSound();
   }, [currentNodeId, game, registeredLeafIds]);
 
   const removeRegisteredLine = useCallback((leafId: string) => {

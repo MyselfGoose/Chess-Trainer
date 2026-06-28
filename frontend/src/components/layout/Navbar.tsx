@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useState } from "react";
 
-import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { ThemeToggleButton } from "@/components/theme/ThemeToggleButton";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
@@ -53,12 +53,12 @@ export function Navbar() {
             );
           })}
           <div className="ml-2 border-l border-border pl-2">
-            <ThemeToggle />
+            <ThemeToggleButton />
           </div>
         </div>
 
         <div className="flex items-center gap-1 sm:hidden">
-          <ThemeToggle />
+          <ThemeToggleButton />
           <button
             type="button"
             className="rounded-lg p-2 text-muted-foreground hover:bg-surface-muted"

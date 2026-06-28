@@ -38,7 +38,7 @@ import {
   type TrainingSessionConfig,
   type TrainingSessionSummary,
 } from "@/lib/training";
-import { playFailSound, playPassSound } from "@/lib/training/sounds";
+import { playChessMoveSound, playFailSound, playNotificationSound, playPassSound } from "@/lib/training/sounds";
 
 const OPPONENT_MOVE_DELAY_MS = 350;
 const LEARN_OPPONENT_DELAY_MS = 600;
@@ -218,6 +218,13 @@ export function useTrainingSession({
         if (!current || !engineInput) {
           return current;
         }
+        if (config.soundEnabled) {
+          const line = getCurrentLine(current);
+          const move = line?.moves[current.moveIndex];
+          if (move?.san) {
+            playChessMoveSound({ san: move.san });
+          }
+        }
         return applyNextOpponentMove(current, engineInput);
       });
     }, delay);
@@ -259,8 +266,11 @@ export function useTrainingSession({
     ) {
       saveTrainingSession(engineState.summary);
       summarySavedRef.current = true;
+      if (config?.soundEnabled) {
+        playNotificationSound();
+      }
     }
-  }, [engineState?.phase, engineState?.summary]);
+  }, [config?.soundEnabled, engineState?.phase, engineState?.summary]);
 
   useEffect(() => {
     if (isHydrated && userColor) {
@@ -300,10 +310,16 @@ export function useTrainingSession({
       }
       const chess = new Chess(engineState.boardFen);
       let playedSan = `${from}-${to}`;
+      let captured: string | undefined;
+      let promotion: string | undefined;
+      let flags: string | undefined;
       try {
         const move = chess.move({ from, to });
         if (move) {
           playedSan = move.san;
+          captured = move.captured;
+          promotion = move.promotion;
+          flags = move.flags;
         }
       } catch {
         // keep coordinate fallback
@@ -320,10 +336,18 @@ export function useTrainingSession({
       if (next === engineState) {
         return false;
       }
+      if (config?.soundEnabled) {
+        playChessMoveSound({
+          san: playedSan,
+          captured: captured ?? null,
+          promotion: promotion ?? null,
+          flags,
+        });
+      }
       setEngineState(next);
       return true;
     },
-    [engineInput, engineState],
+    [config?.soundEnabled, engineInput, engineState],
   );
 
   const needsPromotion = useCallback(
@@ -344,10 +368,16 @@ export function useTrainingSession({
       }
       const chess = new Chess(engineState.boardFen);
       let playedSan = `${from}-${to}=${piece}`;
+      let captured: string | undefined;
+      let promotion: string | undefined;
+      let flags: string | undefined;
       try {
         const move = chess.move({ from, to, promotion: piece });
         if (move) {
           playedSan = move.san;
+          captured = move.captured;
+          promotion = move.promotion;
+          flags = move.flags;
         }
       } catch {
         // keep fallback
@@ -363,10 +393,18 @@ export function useTrainingSession({
       if (next === engineState) {
         return false;
       }
+      if (config?.soundEnabled) {
+        playChessMoveSound({
+          san: playedSan,
+          captured: captured ?? null,
+          promotion: promotion ?? null,
+          flags,
+        });
+      }
       setEngineState(next);
       return true;
     },
-    [engineInput, engineState],
+    [config?.soundEnabled, engineInput, engineState],
   );
 
   const handleAdvanceFromFeedback = useCallback(() => {

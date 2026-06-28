@@ -35,24 +35,25 @@ function MoonIcon() {
   );
 }
 
-function subscribeNoop(): () => void {
-  return () => {};
+function subscribeToHtmlClass(callback: () => void): () => void {
+  const observer = new MutationObserver(callback);
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["class"],
+  });
+  return () => observer.disconnect();
 }
 
-function getClientSnapshot(): boolean {
-  return true;
-}
-
-function getServerSnapshot(): boolean {
-  return false;
+function readDarkFromDocument(): boolean {
+  return document.documentElement.classList.contains("dark");
 }
 
 export function ThemeToggle() {
-  const { isDark, toggleTheme } = useTheme();
-  const mounted = useSyncExternalStore(
-    subscribeNoop,
-    getClientSnapshot,
-    getServerSnapshot,
+  const { toggleTheme } = useTheme();
+  const isDark = useSyncExternalStore(
+    subscribeToHtmlClass,
+    readDarkFromDocument,
+    () => false,
   );
 
   return (
@@ -60,28 +61,10 @@ export function ThemeToggle() {
       type="button"
       onClick={toggleTheme}
       className="relative inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-surface-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
-      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      title={isDark ? "Light mode" : "Dark mode"}
+      aria-label="Toggle color theme"
+      title="Toggle color theme"
     >
-      <span
-        className={`absolute transition-all duration-300 ${
-          mounted && isDark
-            ? "rotate-0 scale-100 opacity-100"
-            : "rotate-90 scale-75 opacity-0"
-        }`}
-      >
-        <SunIcon />
-      </span>
-      <span
-        className={`absolute transition-all duration-300 ${
-          mounted && !isDark
-            ? "rotate-0 scale-100 opacity-100"
-            : "-rotate-90 scale-75 opacity-0"
-        }`}
-      >
-        <MoonIcon />
-      </span>
-      {!mounted ? <span className="h-4 w-4" aria-hidden /> : null}
+      {isDark ? <SunIcon /> : <MoonIcon />}
     </button>
   );
 }

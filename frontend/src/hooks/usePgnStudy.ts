@@ -27,6 +27,7 @@ import {
   resolveTipAfterNavigate,
 } from "@/lib/navigation/treeNavigation";
 import type { MoveNavigationHandlers } from "@/hooks/useMoveNavigation";
+import { playChessMoveSound } from "@/lib/sounds/feedbackSounds";
 import {
   getRepertoire,
   loadStudySession,
@@ -299,7 +300,18 @@ export function usePgnStudy(repertoireId: string): UsePgnStudyResult {
     navigateToNode(tipNodeId);
   }, [currentGame, navigateToNode, tipNodeId]);
 
-  const selectChoice = goToNode;
+  const selectChoice = useCallback(
+    (nodeId: string) => {
+      if (currentGame && currentNodeId) {
+        const node = currentGame.nodes[nodeId];
+        if (node?.parentId === currentNodeId && node.san) {
+          playChessMoveSound({ san: node.san });
+        }
+      }
+      goToNode(nodeId);
+    },
+    [currentGame, currentNodeId, goToNode],
+  );
 
   const tryBoardMove = useCallback(
     (from: Square, to: Square, promotion?: PromotionPiece): boolean => {
@@ -317,6 +329,8 @@ export function usePgnStudy(repertoireId: string): UsePgnStudyResult {
       if (!matched) {
         return false;
       }
+
+      playChessMoveSound({ san: matched.san });
 
       setUiState((prev) => {
         const resolvedTip = prev.tipNodeId

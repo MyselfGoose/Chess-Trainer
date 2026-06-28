@@ -27,19 +27,16 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-function readInitialTheme(): ThemePreference {
-  if (typeof window === "undefined") {
-    return "light";
-  }
-  return resolveTheme(readStoredTheme());
-}
-
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<ThemePreference>(readInitialTheme);
+  const [theme, setThemeState] = useState<ThemePreference>("light");
 
   useEffect(() => {
-    applyThemeToDocument(theme);
-  }, [theme]);
+    /* eslint-disable react-hooks/set-state-in-effect -- sync stored theme after mount */
+    const resolved = resolveTheme(readStoredTheme());
+    setThemeState(resolved);
+    applyThemeToDocument(resolved);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, []);
 
   const setTheme = useCallback((next: ThemePreference) => {
     setThemeState(next);

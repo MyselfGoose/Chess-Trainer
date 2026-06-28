@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { loadStudy, PGN_STORAGE_KEY } from "@/lib/pgn";
 import { createRepertoire } from "@/lib/repertoires";
@@ -15,9 +15,6 @@ function readLegacyState(): {
   visible: boolean;
   legacyName: string;
 } {
-  if (typeof window === "undefined") {
-    return { visible: false, legacyName: "Imported session" };
-  }
   if (sessionStorage.getItem(DISMISS_KEY)) {
     return { visible: false, legacyName: "Imported session" };
   }
@@ -33,9 +30,19 @@ function readLegacyState(): {
 }
 
 export function LegacyMigrationBanner({ onMigrated }: LegacyMigrationBannerProps) {
-  const [state, setState] = useState(readLegacyState);
-  const { visible, legacyName } = state;
-  const [name, setName] = useState(legacyName);
+  const [state, setState] = useState({
+    visible: false,
+    legacyName: "Imported session",
+  });
+  const [name, setName] = useState("Imported session");
+
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- client-only sessionStorage */
+    const next = readLegacyState();
+    setState(next);
+    setName(next.legacyName);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, []);
 
   const dismiss = useCallback(() => {
     sessionStorage.setItem(DISMISS_KEY, "1");
@@ -60,7 +67,7 @@ export function LegacyMigrationBanner({ onMigrated }: LegacyMigrationBannerProps
     onMigrated();
   }, [name, onMigrated]);
 
-  if (!visible) {
+  if (!state.visible) {
     return null;
   }
 
@@ -75,7 +82,7 @@ export function LegacyMigrationBanner({ onMigrated }: LegacyMigrationBannerProps
           type="text"
           value={name}
           onChange={(event) => setName(event.target.value)}
-          className="mt-1 w-full rounded-md border border-amber-200 bg-surface px-3 py-1.5 text-sm"
+          className="app-input mt-1"
         />
       </label>
       <div className="mt-3 flex flex-wrap gap-2">
@@ -89,7 +96,7 @@ export function LegacyMigrationBanner({ onMigrated }: LegacyMigrationBannerProps
         <button
           type="button"
           onClick={dismiss}
-          className="rounded-md px-3 py-1.5 text-xs text-warning-foreground"
+          className="btn-ghost min-h-0 px-3 py-1.5 text-xs"
         >
           Dismiss
         </button>
