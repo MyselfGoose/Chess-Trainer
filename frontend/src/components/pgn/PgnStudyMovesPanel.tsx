@@ -1,7 +1,9 @@
 "use client";
 
 import type { MoveChoice, StudyGame } from "@/lib/pgn";
+import type { BoardOrientation } from "@/lib/repertoires";
 
+import { EnginePanel } from "@/components/engine/EnginePanel";
 import { PgnCommentCard } from "./PgnCommentCard";
 import { PgnMoveChoices } from "./PgnMoveChoices";
 
@@ -11,6 +13,8 @@ interface PgnStudyMovesPanelProps {
   availableMoves: MoveChoice[];
   turnLabel: string;
   isAtLineEnd: boolean;
+  boardFen: string;
+  orientation: BoardOrientation;
   onSelectChoice: (nodeId: string) => void;
   onBack: () => void;
 }
@@ -21,6 +25,8 @@ export function PgnStudyMovesPanel({
   availableMoves,
   turnLabel,
   isAtLineEnd,
+  boardFen,
+  orientation,
   onSelectChoice,
   onBack,
 }: PgnStudyMovesPanelProps) {
@@ -30,6 +36,10 @@ export function PgnStudyMovesPanel({
 
   return (
     <aside className="flex h-full min-h-0 w-full flex-col gap-3 overflow-hidden p-3 lg:p-4">
+      <div className="hidden shrink-0 lg:block">
+        <EnginePanel fen={boardFen} orientation={orientation} />
+      </div>
+
       <PgnCommentCard node={currentNode} />
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg bg-background ring-1 ring-border">

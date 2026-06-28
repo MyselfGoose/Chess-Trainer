@@ -13,6 +13,7 @@ import {
 import { PromotionDialog } from "@/components/chess/PromotionDialog";
 import { DuplicateForkModal } from "@/components/repertoires/DuplicateForkModal";
 import { ExportPgnModal } from "@/components/repertoires/ExportPgnModal";
+import { EnginePanelDrawer } from "@/components/engine/EnginePanelDrawer";
 import { PgnStudyMovesPanel } from "@/components/pgn/PgnStudyMovesPanel";
 import { PgnStudyToolsPanel } from "@/components/pgn/PgnStudyToolsPanel";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -272,6 +273,10 @@ export default function StudyPage({
             </h1>
           </div>
           <div className="ml-auto flex shrink-0 flex-wrap items-center gap-2">
+            <EnginePanelDrawer
+              fen={study.boardFen}
+              orientation={study.orientation}
+            />
             <button
               type="button"
               onClick={() => setShowExport(true)}
@@ -372,6 +377,8 @@ export default function StudyPage({
             availableMoves={study.availableMoves}
             turnLabel={study.turnLabel}
             isAtLineEnd={study.isAtLineEnd}
+            boardFen={study.boardFen}
+            orientation={study.orientation}
             onSelectChoice={study.selectChoice}
             onBack={study.goBack}
           />

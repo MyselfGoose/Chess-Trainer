@@ -299,6 +299,7 @@ Walk your repertoire on an interactive board with repertoire-constrained moves.
 | **Game info & stats** | PGN headers and line statistics |
 | **Path bar** | Breadcrumb of moves from root to current position |
 | **Opening badge** | ECO code and opening name when recognized (e.g. `C50 — Italian Game`) |
+| **Engine panel** | Optional Stockfish analysis (toggle on; eval bar, best move, depth) |
 | **Move choices** | Next repertoire moves with main-line / variation labels |
 | **Back one move** | Step to parent position |
 
@@ -332,6 +333,21 @@ Chapter export includes complete game trees for those games (shared prefixes and
 ### Opening names
 
 Below the path bar, an opening badge shows the ECO code and name when the current position matches the bundled opening database. Navigate to a different branch and the badge updates. Opening data is loaded on demand and cached after the first lookup.
+
+### Engine analysis
+
+Stockfish runs **client-side** in a Web Worker when you enable analysis. It does not replace repertoire moves — it is advisory only.
+
+| Control | Behavior |
+|---------|----------|
+| **Analyze** toggle (right sidebar on desktop) | Off by default; turn on to analyze the current position |
+| **Engine** button (mobile header) | Opens a drawer with the same engine panel |
+| **Eval bar** | White advantage to the right; updates as depth increases |
+| **Best / Depth** | Engine best move and search depth (desktop default 18, mobile default 14) |
+
+Analysis **stops and restarts** when you navigate to a new position. If the engine fails to load, study mode continues to work normally.
+
+Disclaimer shown in the panel: engine suggestions may differ from your repertoire preparation.
 
 ### Duplicate & Edit
 

@@ -30,6 +30,7 @@ Everything runs in your browser. Repertoires, study sessions, and training histo
 | **PGN import** | Parse multi-game databases, preserve comments, annotations, and variation trees |
 | **Repertoire builder** | Play moves on the board, register complete lines, branch into alternatives |
 | **Study mode** | Walk your tree interactively — only repertoire moves are legal |
+| **Engine analysis** | Optional Stockfish eval in study mode (client-side, toggle on) |
 | **Opening training** | Drill lines as White or Black; opponent replies automatically; pass/fail feedback |
 | **Move navigation** | Arrow keys and scroll wheel to step through move chains (study, builder, free play) |
 | **Free play board** | Standard chess game with full move history navigation |
