@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 import { ChessBoard } from "@/components/chess/ChessBoard";
 import {
@@ -10,8 +10,13 @@ import {
 import { PromotionDialog } from "@/components/chess/PromotionDialog";
 import { useBoardAnnotationState } from "@/hooks/useBoardAnnotationState";
 import { useChessGame } from "@/hooks/useChessGame";
-
-type BoardOrientation = "white" | "black";
+import {
+  BOARD_ORIENTATION_KEY,
+  loadOrientationPreference,
+  saveOrientationPreference,
+  toggleOrientation,
+} from "@/lib/chess/orientationPreference";
+import type { BoardOrientation } from "@/lib/repertoires/types";
 
 function formatResult(
   result: ReturnType<typeof useChessGame>["snapshot"]["result"],
@@ -99,10 +104,16 @@ export default function BoardPage() {
   const play = useChessGame();
   const boardAnnotations = useBoardAnnotationState();
   const boardNavRef = useRef<HTMLDivElement>(null);
-  const [orientation, setOrientation] = useState<BoardOrientation>("white");
+  const [orientation, setOrientation] = useState<BoardOrientation>(() =>
+    loadOrientationPreference(BOARD_ORIENTATION_KEY),
+  );
+
+  useEffect(() => {
+    saveOrientationPreference(BOARD_ORIENTATION_KEY, orientation);
+  }, [orientation]);
 
   const flipBoard = useCallback(() => {
-    setOrientation((current) => (current === "white" ? "black" : "white"));
+    setOrientation((current) => toggleOrientation(current));
   }, []);
 
   const resultMessage = formatResult(play.snapshot.result);

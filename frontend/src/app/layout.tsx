@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
+import { ClientProviders } from "@/components/layout/ClientProviders";
 import { Navbar } from "@/components/layout/Navbar";
 
 import "./globals.css";
@@ -36,6 +37,7 @@ export default function RootLayout({
         <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {children}
         </main>
+        <ClientProviders />
       </body>
     </html>
   );

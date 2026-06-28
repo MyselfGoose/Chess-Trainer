@@ -11,6 +11,7 @@ node_modules/
 .pnp.*
 .yarn/*
 !.yarn/patches
+docs/implementation-guide-phase-1-2.md
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions

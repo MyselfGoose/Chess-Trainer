@@ -31,7 +31,9 @@ import {
   getRepertoire,
   loadStudySession,
   saveStudySession,
+  type BoardOrientation,
   type Repertoire,
+  type StudySessionState,
 } from "@/lib/repertoires";
 
 function getNode(game: StudyGame, id: string): StudyNode | undefined {
@@ -67,6 +69,8 @@ export interface UsePgnStudyResult {
   hasStudy: boolean;
   isHydrated: boolean;
   selectedGameIndex: number;
+  orientation: BoardOrientation;
+  tipNodeId: string | null;
   goToNode: (nodeId: string) => void;
   goBack: () => void;
   goForward: () => void;
@@ -82,6 +86,7 @@ export interface UsePgnStudyResult {
   needsPromotion: (from: Square, to: Square) => boolean;
   selectGame: (index: number) => void;
   reloadStudy: () => void;
+  setOrientation: (orientation: BoardOrientation) => void;
 }
 
 interface StudyUiState {
@@ -89,6 +94,7 @@ interface StudyUiState {
   currentNodeId: string | null;
   tipNodeId: string | null;
   selectedGameIndex: number;
+  orientation: BoardOrientation;
 }
 
 const EMPTY_STUDY_STATE: StudyUiState = {
@@ -96,6 +102,7 @@ const EMPTY_STUDY_STATE: StudyUiState = {
   currentNodeId: null,
   tipNodeId: null,
   selectedGameIndex: 0,
+  orientation: "white",
 };
 
 function readStudyState(repertoireId: string): StudyUiState {
@@ -114,29 +121,46 @@ function readStudyState(repertoireId: string): StudyUiState {
       ? sessionNodeId
       : defaultNodeId;
 
+  const sessionTipId = session?.tipNodeId;
+  const tipNodeId =
+    sessionTipId && game.nodes[sessionTipId] ? sessionTipId : currentNodeId;
+
   return {
     repertoire,
     currentNodeId,
-    tipNodeId: currentNodeId,
+    tipNodeId,
     selectedGameIndex: gameIndex,
+    orientation: session?.orientation ?? "white",
   };
 }
 
 function persistSession(
   repertoireId: string,
-  currentNodeId: string | null,
-  selectedGameIndex: number,
+  state: StudySessionState,
 ): void {
-  if (!currentNodeId) {
-    return;
-  }
-  saveStudySession(repertoireId, { currentNodeId, selectedGameIndex });
+  saveStudySession(repertoireId, state);
+}
+
+function buildSessionState(
+  currentNodeId: string,
+  selectedGameIndex: number,
+  tipNodeId: string,
+  orientation: BoardOrientation,
+): StudySessionState {
+  return {
+    version: 2,
+    currentNodeId,
+    selectedGameIndex,
+    tipNodeId,
+    orientation,
+  };
 }
 
 export function usePgnStudy(repertoireId: string): UsePgnStudyResult {
   const [uiState, setUiState] = useState<StudyUiState>(EMPTY_STUDY_STATE);
   const [isHydrated, setIsHydrated] = useState(false);
-  const { repertoire, currentNodeId, tipNodeId, selectedGameIndex } = uiState;
+  const { repertoire, currentNodeId, tipNodeId, selectedGameIndex, orientation } =
+    uiState;
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is client-only
@@ -222,7 +246,15 @@ export function usePgnStudy(repertoireId: string): UsePgnStudyResult {
         const resolvedTip = prev.tipNodeId
           ? resolveTipAfterNavigate(currentGame, prev.tipNodeId, nodeId)
           : nodeId;
-        persistSession(repertoireId, nodeId, prev.selectedGameIndex);
+        persistSession(
+          repertoireId,
+          buildSessionState(
+            nodeId,
+            prev.selectedGameIndex,
+            resolvedTip,
+            prev.orientation,
+          ),
+        );
         return {
           ...prev,
           currentNodeId: nodeId,
@@ -290,7 +322,15 @@ export function usePgnStudy(repertoireId: string): UsePgnStudyResult {
         const resolvedTip = prev.tipNodeId
           ? resolveTipAfterNavigate(currentGame, prev.tipNodeId, matched.id)
           : matched.id;
-        persistSession(repertoireId, matched.id, prev.selectedGameIndex);
+        persistSession(
+          repertoireId,
+          buildSessionState(
+            matched.id,
+            prev.selectedGameIndex,
+            resolvedTip,
+            prev.orientation,
+          ),
+        );
         return {
           ...prev,
           currentNodeId: matched.id,
@@ -319,15 +359,41 @@ export function usePgnStudy(repertoireId: string): UsePgnStudyResult {
       }
       const game = repertoire.games[index];
       const rootId = game.rootId;
-      persistSession(repertoireId, rootId, index);
-      setUiState((prev) => ({
-        ...prev,
-        selectedGameIndex: index,
-        currentNodeId: rootId,
-        tipNodeId: rootId,
-      }));
+      setUiState((prev) => {
+        persistSession(
+          repertoireId,
+          buildSessionState(rootId, index, rootId, prev.orientation),
+        );
+        return {
+          ...prev,
+          selectedGameIndex: index,
+          currentNodeId: rootId,
+          tipNodeId: rootId,
+        };
+      });
     },
     [repertoire, repertoireId],
+  );
+
+  const setOrientation = useCallback(
+    (nextOrientation: BoardOrientation) => {
+      setUiState((prev) => {
+        if (!prev.currentNodeId) {
+          return { ...prev, orientation: nextOrientation };
+        }
+        persistSession(
+          repertoireId,
+          buildSessionState(
+            prev.currentNodeId,
+            prev.selectedGameIndex,
+            prev.tipNodeId ?? prev.currentNodeId,
+            nextOrientation,
+          ),
+        );
+        return { ...prev, orientation: nextOrientation };
+      });
+    },
+    [repertoireId],
   );
 
   const navigation = useMemo((): MoveNavigationHandlers => {
@@ -381,6 +447,8 @@ export function usePgnStudy(repertoireId: string): UsePgnStudyResult {
       isHydrated && repertoire !== null && repertoire.games.length > 0,
     isHydrated,
     selectedGameIndex,
+    orientation,
+    tipNodeId,
     goToNode,
     goBack,
     goForward,
@@ -392,5 +460,6 @@ export function usePgnStudy(repertoireId: string): UsePgnStudyResult {
     needsPromotion,
     selectGame,
     reloadStudy,
+    setOrientation,
   };
 }

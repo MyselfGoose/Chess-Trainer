@@ -47,6 +47,9 @@ function buildInput(userColor: "white" | "black"): {
       lines,
       games: repertoire.games,
       startedAt: new Date().toISOString(),
+      mode: "drill",
+      showCommentsAfterLine: false,
+      opponentPolicy: "mainline",
     },
   };
 }

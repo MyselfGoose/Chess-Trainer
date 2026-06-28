@@ -7,7 +7,14 @@ import { useCallback, useState } from "react";
 import { computeLineStats } from "@/lib/pgn";
 import { repertoireToPgn, downloadPgnFile } from "@/lib/pgn/export";
 import {
+  aggregateLineStats,
+  findWeakLines,
+  getTrainingHistory,
+  getMasteryForRepertoire,
+} from "@/lib/training";
+import {
   deleteRepertoire,
+  REPERTOIRE_NAME_MAX_LENGTH,
   updateRepertoire,
   type Repertoire,
 } from "@/lib/repertoires";
@@ -44,17 +51,35 @@ export function RepertoireCard({ repertoire, onRefresh }: RepertoireCardProps) {
   const [showRename, setShowRename] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [name, setName] = useState(repertoire.name);
+  const [renameError, setRenameError] = useState<string | null>(null);
   const stats = aggregateStats(repertoire);
+  const weakLines = findWeakLines(
+    aggregateLineStats(
+      repertoire.id,
+      getTrainingHistory(),
+      getMasteryForRepertoire(repertoire.id),
+    ),
+  );
 
   const handleRename = useCallback(() => {
     const trimmed = name.trim();
-    if (!trimmed || trimmed === repertoire.name) {
+    if (!trimmed) {
+      setRenameError("Name cannot be empty.");
+      return;
+    }
+    if (trimmed.length > REPERTOIRE_NAME_MAX_LENGTH) {
+      setRenameError(`Max ${REPERTOIRE_NAME_MAX_LENGTH} characters.`);
+      return;
+    }
+    if (trimmed === repertoire.name) {
       setShowRename(false);
+      setRenameError(null);
       return;
     }
     updateRepertoire(repertoire.id, { name: trimmed });
     onRefresh();
     setShowRename(false);
+    setRenameError(null);
   }, [name, onRefresh, repertoire.id, repertoire.name]);
 
   const handleDelete = useCallback(() => {
@@ -73,36 +98,56 @@ export function RepertoireCard({ repertoire, onRefresh }: RepertoireCardProps) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           {showRename ? (
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                className="min-w-0 flex-1 rounded-md border border-zinc-300 px-2 py-1 text-sm"
-                autoFocus
-              />
-              <button
-                type="button"
-                onClick={handleRename}
-                className="rounded-md bg-green-700 px-2 py-1 text-xs font-medium text-white"
-              >
-                Save
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setName(repertoire.name);
-                  setShowRename(false);
-                }}
-                className="rounded-md px-2 py-1 text-xs text-zinc-500"
-              >
-                Cancel
-              </button>
+            <div className="flex flex-col gap-1">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(event) => {
+                    setName(event.target.value);
+                    setRenameError(null);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      handleRename();
+                    }
+                    if (event.key === "Escape") {
+                      setName(repertoire.name);
+                      setShowRename(false);
+                      setRenameError(null);
+                    }
+                  }}
+                  maxLength={REPERTOIRE_NAME_MAX_LENGTH}
+                  className="min-w-0 flex-1 rounded-md border border-zinc-300 px-2 py-1 text-sm"
+                  autoFocus
+                  aria-label="Repertoire name"
+                />
+                <button
+                  type="button"
+                  onClick={handleRename}
+                  className="rounded-md bg-green-700 px-2 py-1 text-xs font-medium text-white"
+                >
+                  Save
+                </button>
+              </div>
+              {renameError ? (
+                <p className="text-xs text-red-600">{renameError}</p>
+              ) : null}
             </div>
           ) : (
-            <h3 className="truncate text-lg font-semibold text-zinc-900">
-              {repertoire.name}
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="truncate text-lg font-semibold text-zinc-900">
+                {repertoire.name}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowRename(true)}
+                className="shrink-0 rounded-md p-1 text-zinc-500 hover:bg-zinc-100"
+                aria-label="Rename repertoire"
+              >
+                ✎
+              </button>
+            </div>
           )}
           <div className="mt-1 flex flex-wrap items-center gap-2">
             <span
@@ -117,6 +162,14 @@ export function RepertoireCard({ repertoire, onRefresh }: RepertoireCardProps) {
             <span className="text-xs text-zinc-500">
               Updated {formatDate(repertoire.updatedAt)}
             </span>
+            {weakLines.length > 0 ? (
+              <Link
+                href={`/training/${repertoire.id}?weak=${weakLines.map((line) => line.lineId).join(",")}`}
+                className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700"
+              >
+                {weakLines.length} weak lines
+              </Link>
+            ) : null}
           </div>
         </div>
       </div>
@@ -154,7 +207,10 @@ export function RepertoireCard({ repertoire, onRefresh }: RepertoireCardProps) {
         ) : null}
         <button
           type="button"
-          onClick={() => setShowRename(true)}
+          onClick={() => {
+            setShowRename(true);
+            setRenameError(null);
+          }}
           className="rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-600 transition hover:bg-zinc-50"
         >
           Rename

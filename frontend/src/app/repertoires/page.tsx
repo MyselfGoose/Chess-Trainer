@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { RepertoireBackupSection } from "@/components/repertoires/RepertoireBackupSection";
 import { RepertoireList } from "@/components/repertoires/RepertoireList";
 
 export default function RepertoiresPage() {
@@ -30,6 +31,7 @@ export default function RepertoiresPage() {
         </header>
 
         <RepertoireList />
+        <RepertoireBackupSection />
       </div>
     </div>
   );

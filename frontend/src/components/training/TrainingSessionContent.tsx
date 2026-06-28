@@ -11,12 +11,11 @@ import { TrainingPanel } from "@/components/training/TrainingPanel";
 import { TrainingSummary } from "@/components/training/TrainingSummary";
 import { useTrainingSession } from "@/hooks/useTrainingSession";
 import type { PromotionPiece } from "@/lib/chess/types";
-import { getRepertoire } from "@/lib/repertoires";
 import {
-  extractTrainingLines,
-  filterLinesForColor,
+  buildLegacyTrainingConfig,
+  decodeTrainingConfig,
   type TrainingColor,
-  type TrainingLine,
+  type TrainingSessionConfig,
 } from "@/lib/training";
 
 interface PendingPromotion {
@@ -28,22 +27,29 @@ function isValidColor(value: string | null): value is TrainingColor {
   return value === "white" || value === "black";
 }
 
-function parseLineSubset(
+function resolveTrainingConfig(
   repertoireId: string,
-  userColor: TrainingColor,
+  configParam: string | null,
+  colorParam: string | null,
   lineIdsParam: string | null,
-): TrainingLine[] | undefined {
-  if (!lineIdsParam) {
-    return undefined;
+): TrainingSessionConfig | null {
+  if (configParam) {
+    const decoded = decodeTrainingConfig(configParam);
+    if (decoded && decoded.repertoireId === repertoireId) {
+      return decoded;
+    }
+    return null;
   }
-  const repertoire = getRepertoire(repertoireId);
-  if (!repertoire) {
-    return undefined;
+
+  if (!isValidColor(colorParam)) {
+    return null;
   }
-  const ids = new Set(lineIdsParam.split(",").filter(Boolean));
-  return filterLinesForColor(extractTrainingLines(repertoire), userColor).filter(
-    (line) => ids.has(line.id),
-  );
+
+  const lineIds = lineIdsParam
+    ? lineIdsParam.split(",").filter(Boolean)
+    : [];
+
+  return buildLegacyTrainingConfig(repertoireId, colorParam, lineIds);
 }
 
 export function TrainingSessionContent({
@@ -54,21 +60,19 @@ export function TrainingSessionContent({
   const { id } = use(params);
   const router = useRouter();
   const searchParams = useSearchParams();
+  const configParam = searchParams.get("config");
   const colorParam = searchParams.get("color");
   const lineIdsParam = searchParams.get("lines");
-  const userColor = isValidColor(colorParam) ? colorParam : null;
 
-  const lineSubset = useMemo(() => {
-    if (!userColor) {
-      return undefined;
-    }
-    return parseLineSubset(id, userColor, lineIdsParam);
-  }, [id, lineIdsParam, userColor]);
+  const sessionConfig = useMemo(
+    () => resolveTrainingConfig(id, configParam, colorParam, lineIdsParam),
+    [colorParam, configParam, id, lineIdsParam],
+  );
+
+  const userColor = sessionConfig?.userColor ?? null;
 
   const training = useTrainingSession({
-    repertoireId: id,
-    userColor,
-    lineSubset,
+    config: sessionConfig,
   });
 
   const [pendingPromotion, setPendingPromotion] =
@@ -130,7 +134,7 @@ export function TrainingSessionContent({
     );
   }
 
-  if (!userColor) {
+  if (!userColor || !sessionConfig) {
     return (
       <div className="flex h-full flex-col items-center justify-center bg-zinc-100 px-4">
         <p className="text-sm text-zinc-600">Choose a color to start training.</p>

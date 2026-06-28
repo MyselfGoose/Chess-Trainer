@@ -13,9 +13,19 @@ export interface Repertoire {
   registeredLeafIds: string[];
 }
 
-export interface StudySessionState {
+export type BoardOrientation = "white" | "black";
+
+export interface StudySessionStateV1 {
   currentNodeId: string;
   selectedGameIndex: number;
+}
+
+export interface StudySessionState {
+  version: 2;
+  currentNodeId: string;
+  selectedGameIndex: number;
+  tipNodeId: string;
+  orientation: BoardOrientation;
 }
 
 export const REPERTOIRE_CATALOG_KEY = "chess:repertoire-catalog";

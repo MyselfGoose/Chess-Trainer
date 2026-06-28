@@ -11,8 +11,11 @@ import {
 } from "@/components/chess/MoveNavigationBindings";
 import { PromotionDialog } from "@/components/chess/PromotionDialog";
 import { PgnStudyPanel } from "@/components/pgn/PgnStudyPanel";
+import { EmptyState } from "@/components/ui/EmptyState";
 import type { PromotionPiece } from "@/lib/chess/types";
 import { annotationsFromPgnNode } from "@/lib/chess/annotations";
+import { findAlternativePaths } from "@/lib/pgn/transpositions";
+import { findGaps } from "@/lib/repertoires/gaps";
 import { useBoardAnnotationState } from "@/hooks/useBoardAnnotationState";
 import { usePgnStudy } from "@/hooks/usePgnStudy";
 
@@ -60,13 +63,17 @@ export default function StudyPage({
   const study = usePgnStudy(id);
   const boardAnnotations = useBoardAnnotationState();
   const boardNavRef = useRef<HTMLDivElement>(null);
-  const [orientation, setOrientation] = useState<BoardOrientation>("white");
   const [studyPromotion, setStudyPromotion] =
     useState<StudyPendingPromotion | null>(null);
 
+  const {
+    setOrientation: setStudyOrientation,
+    orientation: studyOrientation,
+  } = study;
+
   const flipBoard = useCallback(() => {
-    setOrientation((current) => (current === "white" ? "black" : "white"));
-  }, []);
+    setStudyOrientation(studyOrientation === "white" ? "black" : "white");
+  }, [setStudyOrientation, studyOrientation]);
 
   const handleStudyMove = useCallback(
     (from: Square, to: Square): boolean => {
@@ -105,6 +112,27 @@ export default function StudyPage({
     [study.currentNode?.arrows, study.currentNode?.squares],
   );
 
+  const transpositionLabels = useMemo(() => {
+    if (!study.currentGame || !study.currentNodeId) {
+      return [];
+    }
+    return findAlternativePaths(study.currentGame, study.currentNodeId);
+  }, [study.currentGame, study.currentNodeId]);
+
+  const preparationGaps = useMemo(() => {
+    if (!study.repertoire) {
+      return [];
+    }
+    return findGaps(study.repertoire);
+  }, [study.repertoire]);
+
+  const trainColor =
+    study.turnLabel === "White" ? "white" : "black";
+  const trainFromHereHref =
+    study.currentNodeId && study.repertoire
+      ? `/training/${study.repertoire.id}?anchor=${study.currentNodeId}&color=${trainColor}`
+      : null;
+
   if (!study.isHydrated) {
     return (
       <div className="flex h-full min-h-0 items-center justify-center bg-zinc-100">
@@ -116,18 +144,18 @@ export default function StudyPage({
   if (!study.hasStudy || !study.repertoire || !study.currentGame || !study.lineStats) {
     return (
       <div className="flex min-h-[50vh] flex-col items-center justify-center bg-zinc-100 px-4">
-        <h1 className="text-xl font-semibold text-zinc-900">
-          Repertoire not found
-        </h1>
-        <p className="mt-2 text-sm text-zinc-600">
-          This repertoire may have been deleted or is invalid.
-        </p>
-        <Link
-          href="/repertoires"
-          className="mt-4 rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white"
-        >
-          Back to repertoires
-        </Link>
+        <EmptyState
+          title="Repertoire not found"
+          description="This repertoire may have been deleted or is invalid."
+          actions={
+            <Link
+              href="/repertoires"
+              className="rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white"
+            >
+              Back to library
+            </Link>
+          }
+        />
       </div>
     );
   }
@@ -144,8 +172,22 @@ export default function StudyPage({
               Study mode — choose your next repertoire move
             </p>
           </div>
-          <FlipBoardButton orientation={orientation} onFlip={flipBoard} />
+          <FlipBoardButton orientation={study.orientation} onFlip={flipBoard} />
+          {trainFromHereHref ? (
+            <Link
+              href={trainFromHereHref}
+              className="shrink-0 rounded-md bg-green-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-800"
+            >
+              Train from here
+            </Link>
+          ) : null}
         </header>
+
+        {transpositionLabels.length > 0 ? (
+          <div className="mb-3 rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-900 ring-1 ring-blue-200">
+            Also reached via: {transpositionLabels.join(" · ")}
+          </div>
+        ) : null}
 
         <BoardFrame>
           <div ref={boardNavRef} className="h-full w-full">
@@ -155,10 +197,11 @@ export default function StudyPage({
               lastMove={study.boardLastMove}
               repertoireDests={study.repertoireDests}
               onRepertoireMove={handleStudyMove}
-              orientation={orientation}
+              orientation={study.orientation}
               annotations={{
-                ...boardAnnotations.annotations,
+                shapes: boardAnnotations.shapes,
                 autoShapes: pgnAutoShapes,
+                onChange: boardAnnotations.annotations.onChange,
                 enabled: studyPromotion === null,
               }}
             />
@@ -184,6 +227,13 @@ export default function StudyPage({
           isAtLineEnd={study.isAtLineEnd}
           lineStats={study.lineStats}
           repertoireName={study.repertoire.name}
+          preparationGaps={preparationGaps}
+          onNavigateToGap={(nodeId) => {
+            study.goToNode(nodeId);
+          }}
+          onSelectSearchLine={(leafNodeId) => {
+            study.goToNode(leafNodeId);
+          }}
           onSelectGame={study.selectGame}
           onSelectNode={study.goToNode}
           onSelectChoice={study.selectChoice}

@@ -10,6 +10,7 @@ export {
 export type { CreateRepertoireInput } from "./storage";
 export {
   clearStudySession,
+  createDefaultStudySession,
   loadStudySession,
   saveStudySession,
 } from "./session";
@@ -29,6 +30,7 @@ export type { RegisteredLine } from "./treeBuilder";
 export type {
   Repertoire,
   RepertoireSource,
+  BoardOrientation,
   StudySessionState,
 } from "./types";
 export {

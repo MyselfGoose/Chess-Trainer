@@ -3,7 +3,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import type { TrainingSessionSummary } from "@/lib/training";
+import {
+  computePassRateTrend,
+  getTrainingHistory,
+  type TrainingSessionSummary,
+} from "@/lib/training";
 
 interface TrainingSummaryProps {
   summary: TrainingSessionSummary;
@@ -20,6 +24,12 @@ export function TrainingSummary({
   const attempted = summary.results.length;
   const passRate =
     attempted > 0 ? Math.round((passed.length / attempted) * 100) : 0;
+
+  const trend = computePassRateTrend(
+    repertoireId,
+    summary.userColor,
+    getTrainingHistory(),
+  );
 
   const failedLineIds = failed.map((result) => result.lineId).join(",");
   const skippedLineIds = summary.skippedLines
@@ -40,6 +50,13 @@ export function TrainingSummary({
           </>
         ) : null}
       </p>
+
+      {trend ? (
+        <p className="mt-2 text-sm text-zinc-600">
+          Pass rate trend: {Math.round(trend.from * 100)}% →{" "}
+          {Math.round(trend.to * 100)}% over last sessions
+        </p>
+      ) : null}
 
       {summary.endedEarly && attempted === 0 ? (
         <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 ring-1 ring-amber-200">

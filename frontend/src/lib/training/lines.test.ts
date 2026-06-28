@@ -6,6 +6,7 @@ import { createRepertoire } from "@/lib/repertoires/storage";
 import { applyMove, createEmptyStudyGame } from "@/lib/repertoires/treeBuilder";
 
 import {
+  applySessionLineLimit,
   countUserMovesInLine,
   extractTrainingLines,
   filterLinesForColor,
@@ -92,6 +93,27 @@ describe("filterLinesForColor", () => {
     whiteLines.forEach((line) => {
       expect(countUserMovesInLine(line, "white")).toBeGreaterThan(0);
     });
+  });
+});
+
+describe("applySessionLineLimit", () => {
+  it("returns all lines when maxLines is 0", () => {
+    const lines = extractTrainingLines(
+      createRepertoire({
+        name: "T",
+        source: "imported",
+        games: parsePgnDatabase(VARIATION_PGN).games,
+      }),
+    );
+    expect(applySessionLineLimit(lines, 0, false)).toHaveLength(lines.length);
+  });
+
+  it("limits to N lines after shuffle", () => {
+    const lines = [{ id: "1" }, { id: "2" }, { id: "3" }] as ReturnType<
+      typeof extractTrainingLines
+    >;
+    const limited = applySessionLineLimit(lines, 2, false);
+    expect(limited).toHaveLength(2);
   });
 });
 

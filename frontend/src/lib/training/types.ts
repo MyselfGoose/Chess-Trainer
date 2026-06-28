@@ -45,6 +45,7 @@ export interface TrainingFeedback {
   message: string;
   expectedSan?: string;
   playedSan?: string;
+  comment?: string;
 }
 
 export function trainingColorToNodeColor(

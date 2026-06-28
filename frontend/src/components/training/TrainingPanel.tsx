@@ -33,7 +33,8 @@ export function TrainingPanel({
     if (phase !== "lineFeedback" || !feedback) {
       return;
     }
-    const timer = setTimeout(onAdvanceFeedback, 1200);
+    const delay = feedback.comment ? 3000 : 2000;
+    const timer = setTimeout(onAdvanceFeedback, delay);
     return () => clearTimeout(timer);
   }, [feedback, onAdvanceFeedback, phase]);
 
@@ -59,7 +60,7 @@ export function TrainingPanel({
             <button
               type="button"
               onClick={onEndTraining}
-              className="rounded-md px-2 py-1 text-xs font-medium text-amber-800 hover:bg-amber-50"
+              className="min-h-11 rounded-md px-2 py-1 text-xs font-medium text-amber-800 hover:bg-amber-50"
             >
               End training
             </button>
@@ -67,7 +68,7 @@ export function TrainingPanel({
           <button
             type="button"
             onClick={onQuit}
-            className="rounded-md px-2 py-1 text-xs font-medium text-zinc-500 hover:bg-zinc-100"
+            className="min-h-11 rounded-md px-2 py-1 text-xs font-medium text-zinc-500 hover:bg-zinc-100"
           >
             Quit
           </button>
@@ -99,13 +100,28 @@ export function TrainingPanel({
 
       <div className="rounded-lg bg-zinc-50 p-3 ring-1 ring-zinc-200">
         {phase === "lineFeedback" && feedback ? (
-          <p
-            className={`text-sm font-medium ${
-              feedback.passed ? "text-green-700" : "text-red-700"
-            }`}
-          >
-            {feedback.message}
-          </p>
+          <div role="alert">
+            {feedback.passed ? (
+              <p className="text-sm font-medium text-green-700">
+                {feedback.message}
+              </p>
+            ) : feedback.playedSan && feedback.expectedSan ? (
+              <div className="rounded-md bg-red-50 px-3 py-2 ring-1 ring-red-200">
+                <p className="text-sm font-semibold text-red-800">
+                  You played {feedback.playedSan}, expected {feedback.expectedSan}
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm font-medium text-red-700">
+                {feedback.message}
+              </p>
+            )}
+            {feedback.comment ? (
+              <p className="mt-3 whitespace-pre-wrap text-sm text-zinc-700">
+                {feedback.comment}
+              </p>
+            ) : null}
+          </div>
         ) : isAnimatingOpponent ? (
           <p className="text-sm text-zinc-600">Opponent playing…</p>
         ) : isUserTurn ? (
@@ -126,22 +142,22 @@ export function TrainingPanel({
         <button
           type="button"
           onClick={onAdvanceFeedback}
-          className="w-full rounded-lg bg-zinc-800 px-4 py-2 text-sm font-medium text-white"
+          className="min-h-11 w-full rounded-lg bg-zinc-800 px-4 py-2 text-sm font-medium text-white"
         >
-          Continue
+          {feedback.comment ? "Skip" : "Continue"}
         </button>
       ) : phase === "active" ? (
         <button
           type="button"
           onClick={onEndTraining}
-          className="w-full rounded-lg bg-amber-100 px-4 py-2 text-sm font-semibold text-amber-900 ring-1 ring-amber-200 transition hover:bg-amber-200"
+          className="min-h-11 w-full rounded-lg bg-amber-100 px-4 py-2 text-sm font-semibold text-amber-900 ring-1 ring-amber-200 transition hover:bg-amber-200"
         >
           End training
         </button>
       ) : null}
 
       <p className="mt-auto text-xs text-zinc-500">
-        Wrong moves end the line immediately. Lines are tested in random order.
+        Wrong moves end the line immediately unless you are in test mode.
       </p>
     </aside>
   );

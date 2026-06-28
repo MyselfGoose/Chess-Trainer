@@ -42,10 +42,16 @@ const STEPS = [
     description:
       "Walk your tree on an interactive board — only repertoire moves are allowed, just like real study.",
   },
+  {
+    title: "Drill with training",
+    description:
+      "Run pass/fail drills on your lines with spaced repetition scheduling and weak-line focus.",
+  },
 ] as const;
 
 const FEATURES = [
   "Full variation trees with comments and annotations from PGN",
+  "Opening drills with pass/fail feedback and spaced repetition",
   "Line statistics — depth, branch count, and total moves",
   "Board-based study with repertoire-constrained move choices",
   "Local library — keep multiple repertoires and switch anytime",
@@ -73,10 +79,10 @@ export default function HomePage() {
                 Create a repertoire
               </Link>
               <Link
-                href="/upload"
+                href="/training"
                 className="rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-zinc-800 ring-1 ring-zinc-300 transition hover:bg-zinc-50"
               >
-                Import a PGN
+                Start training
               </Link>
             </div>
           </div>
@@ -89,7 +95,7 @@ export default function HomePage() {
           <h2 className="text-center text-2xl font-bold text-zinc-900">
             How it works
           </h2>
-          <div className="mt-10 grid gap-8 sm:grid-cols-3">
+          <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {STEPS.map((step, index) => (
               <div key={step.title} className="text-center">
                 <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-green-100 text-sm font-bold text-green-800">

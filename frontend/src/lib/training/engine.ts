@@ -4,6 +4,7 @@ import type { PromotionPiece } from "@/lib/chess/types";
 import { findChoiceByMove } from "@/lib/pgn";
 import type { StudyGame } from "@/lib/pgn";
 
+import type { OpponentPolicy, TrainingMode } from "./config";
 import { countUserMovesInLine } from "./lines";
 import type {
   TrainingColor,
@@ -38,6 +39,9 @@ export interface CreateTrainingEngineInput {
   lines: TrainingLine[];
   games: StudyGame[];
   startedAt: string;
+  mode: TrainingMode;
+  showCommentsAfterLine: boolean;
+  opponentPolicy: OpponentPolicy;
 }
 
 function getGameForLine(input: CreateTrainingEngineInput, line: TrainingLine): StudyGame {
@@ -261,6 +265,13 @@ function completeLinePassed(
     state.userMovesPlayedInLine,
   );
 
+  const game = getGameForLine(input, line);
+  const leafNode = game.nodes[line.leafNodeId];
+  const comment =
+    input.showCommentsAfterLine && input.mode !== "test"
+      ? leafNode?.comment?.trim() || undefined
+      : undefined;
+
   return {
     ...state,
     waitingForUser: false,
@@ -269,6 +280,7 @@ function completeLinePassed(
     feedback: {
       passed: true,
       message: "Line complete",
+      comment,
     },
     phase: "lineFeedback",
   };
@@ -335,12 +347,42 @@ export function tryUserMove(
     matched !== null && matched.id === expected.id;
 
   if (!isCorrect) {
-    return completeLineFailed(
+    const failed = completeLineFailed(
       state,
       input,
       playedSan ?? `${from}-${to}`,
       expected.san,
     );
+
+    if (input.mode === "survival") {
+      return {
+        ...failed,
+        phase: "summary",
+        summary: buildSummary(input, failed.results, state.lines, false),
+      };
+    }
+
+    if (input.mode === "learn") {
+      return {
+        ...failed,
+        feedback: {
+          ...failed.feedback!,
+          message: `Hint: expected ${expected.san}`,
+        },
+      };
+    }
+
+    if (input.mode === "test") {
+      return {
+        ...failed,
+        feedback: {
+          passed: false,
+          message: "Line recorded",
+        },
+      };
+    }
+
+    return failed;
   }
 
   const nextState: TrainingEngineState = {

@@ -114,3 +114,48 @@ export function countTrainableLines(
 ): number {
   return filterLinesForColor(extractTrainingLines(repertoire), userColor).length;
 }
+
+function pathContainsNode(
+  game: StudyGame,
+  leafNodeId: string,
+  anchorNodeId: string,
+): boolean {
+  const path = buildPath(game, leafNodeId);
+  return path.some((node) => node.id === anchorNodeId);
+}
+
+export function filterLinesFromAnchor(
+  lines: TrainingLine[],
+  game: StudyGame,
+  anchorNodeId: string,
+): TrainingLine[] {
+  return lines.filter((line) =>
+    pathContainsNode(game, line.leafNodeId, anchorNodeId),
+  );
+}
+
+export function filterLinesFromAnchorForGame(
+  lines: TrainingLine[],
+  games: StudyGame[],
+  anchorNodeId: string,
+): TrainingLine[] {
+  return lines.filter((line) => {
+    const game = games[line.gameIndex];
+    if (!game) {
+      return false;
+    }
+    return pathContainsNode(game, line.leafNodeId, anchorNodeId);
+  });
+}
+
+export function applySessionLineLimit(
+  lines: TrainingLine[],
+  maxLines: number,
+  shuffle: boolean,
+): TrainingLine[] {
+  const ordered = shuffle ? shuffleLines(lines) : [...lines];
+  if (maxLines <= 0 || maxLines >= ordered.length) {
+    return ordered;
+  }
+  return ordered.slice(0, maxLines);
+}

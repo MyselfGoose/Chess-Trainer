@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Square } from "chess.js";
 
 import { ChessBoard } from "@/components/chess/ChessBoard";
@@ -13,16 +13,21 @@ import { PromotionDialog } from "@/components/chess/PromotionDialog";
 import { PgnLineStats } from "@/components/pgn/PgnLineStats";
 import { PgnPathBar } from "@/components/pgn/PgnPathBar";
 import type { PromotionPiece } from "@/lib/chess/types";
+import {
+  BUILDER_ORIENTATION_KEY,
+  loadOrientationPreference,
+  saveOrientationPreference,
+  toggleOrientation,
+} from "@/lib/chess/orientationPreference";
 import { useBoardAnnotationState } from "@/hooks/useBoardAnnotationState";
 import { useRepertoireBuilder } from "@/hooks/useRepertoireBuilder";
 import { REPERTOIRE_NAME_MAX_LENGTH } from "@/lib/repertoires";
+import type { BoardOrientation } from "@/lib/repertoires/types";
 
 interface PendingPromotion {
   from: Square;
   to: Square;
 }
-
-type BoardOrientation = "white" | "black";
 
 function FlipBoardButton({
   orientation,
@@ -65,9 +70,19 @@ export function RepertoireBuilder({
   const builder = useRepertoireBuilder({ repertoireId, initialName });
   const boardAnnotations = useBoardAnnotationState();
   const boardNavRef = useRef<HTMLDivElement>(null);
-  const [orientation, setOrientation] = useState<BoardOrientation>("white");
+  const [orientation, setOrientation] = useState<BoardOrientation>(() =>
+    loadOrientationPreference(BUILDER_ORIENTATION_KEY),
+  );
   const [pendingPromotion, setPendingPromotion] =
     useState<PendingPromotion | null>(null);
+
+  useEffect(() => {
+    saveOrientationPreference(BUILDER_ORIENTATION_KEY, orientation);
+  }, [orientation]);
+
+  const flipBoard = useCallback(() => {
+    setOrientation((current) => toggleOrientation(current));
+  }, []);
 
   const handleMove = useCallback(
     (from: Square, to: Square): boolean => {
@@ -125,14 +140,7 @@ export function RepertoireBuilder({
             </p>
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2">
-            <FlipBoardButton
-              orientation={orientation}
-              onFlip={() =>
-                setOrientation((current) =>
-                  current === "white" ? "black" : "white",
-                )
-              }
-            />
+            <FlipBoardButton orientation={orientation} onFlip={flipBoard} />
             <button
               type="button"
               onClick={handleSaveClick}
