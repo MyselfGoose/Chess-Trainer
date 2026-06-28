@@ -2,6 +2,12 @@
 
 import { useState } from "react";
 
+import {
+  ENGINE_SUGGESTION_LABEL,
+  formatCompareDelta,
+  formatEvalScore,
+  type CompareMoveResult,
+} from "@/lib/engine";
 import { formatAnnotations } from "@/lib/pgn";
 import type { MoveChoice } from "@/lib/pgn";
 
@@ -11,6 +17,8 @@ interface PgnMoveChoicesProps {
   turnLabel: string;
   isAtLineEnd: boolean;
   isAtRoot: boolean;
+  orientation: "white" | "black";
+  compareResults?: Map<string, CompareMoveResult>;
   onSelect: (nodeId: string) => void;
 }
 
@@ -28,16 +36,27 @@ function formatMoveLabel(choice: MoveChoice): string {
 function MoveChoiceCard({
   choice,
   isSelected,
+  compareResult,
+  orientation,
   onSelect,
 }: {
   choice: MoveChoice;
   isSelected: boolean;
+  compareResult?: CompareMoveResult;
+  orientation: "white" | "black";
   onSelect: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const nagText = formatAnnotations(choice.node.annotations);
   const comment = choice.node.comment;
   const showExpand = Boolean(comment && comment.length > 80);
+
+  const evalLabel = compareResult
+    ? formatEvalScore(compareResult, orientation)
+    : null;
+  const deltaLabel = compareResult
+    ? formatCompareDelta(compareResult.deltaFromBestCp)
+    : null;
 
   return (
     <button
@@ -56,15 +75,35 @@ function MoveChoiceCard({
             <span className="ml-1 font-normal text-muted-foreground">{nagText}</span>
           ) : null}
         </span>
-        <span
-          className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-            choice.isMainLine
-              ? "bg-accent-subtle text-accent-foreground"
-              : "bg-warning-muted text-warning-foreground"
-          }`}
-        >
-          {choice.isMainLine ? "Main" : "Alt"}
-        </span>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          {compareResult ? (
+            <span
+              className={`rounded px-1.5 py-0.5 font-mono text-[10px] font-semibold ${
+                compareResult.rank === 1
+                  ? "bg-surface-muted text-foreground"
+                  : "bg-background text-muted-foreground ring-1 ring-border"
+              }`}
+              title={`${ENGINE_SUGGESTION_LABEL} — may differ from repertoire prep.`}
+              aria-label={`${ENGINE_SUGGESTION_LABEL}: ${evalLabel}, ${deltaLabel} from best`}
+            >
+              {evalLabel}
+              {compareResult.rank === 1 ? (
+                <span className="ml-1 text-[9px] uppercase tracking-wide">best</span>
+              ) : (
+                <span className="ml-1">{deltaLabel}</span>
+              )}
+            </span>
+          ) : null}
+          <span
+            className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+              choice.isMainLine
+                ? "bg-accent-subtle text-accent-foreground"
+                : "bg-warning-muted text-warning-foreground"
+            }`}
+          >
+            {choice.isMainLine ? "Main" : "Alt"}
+          </span>
+        </div>
       </div>
 
       {choice.lineCount > 1 ? (
@@ -105,6 +144,8 @@ export function PgnMoveChoices({
   turnLabel,
   isAtLineEnd,
   isAtRoot,
+  orientation,
+  compareResults,
   onSelect,
 }: PgnMoveChoicesProps) {
   if (isAtLineEnd) {
@@ -140,6 +181,8 @@ export function PgnMoveChoices({
             key={choice.node.id}
             choice={choice}
             isSelected={currentNodeId === choice.node.id}
+            compareResult={compareResults?.get(choice.node.id)}
+            orientation={orientation}
             onSelect={() => onSelect(choice.node.id)}
           />
         ))}

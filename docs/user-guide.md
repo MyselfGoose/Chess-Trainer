@@ -164,8 +164,11 @@ Analytics overview before you study or train:
 | **Weak lines** | Lines with pass rate below 50% after 2+ attempts; links to filtered training |
 | **Chapter breakdown** | Lines, trained count, and weak count per chapter (plus unassigned lines) |
 | **Coverage map** | Color grid of mastery level per line |
+| **Engine blunder check** | Optional scan for large eval drops; report links back to study positions |
 
 Coverage % counts lines where mastery level is beyond **new** (you have started training them).
+
+**Engine blunder check** (optional, off by default): click **Scan repertoire** to run a client-side Stockfish pass over your tree. Positions where the eval drops more than 200cp after a repertoire move are flagged — advisory only, with copy to verify with your coach. Results link to study mode; training is never blocked. Large repertoires (500+ nodes) ask for confirmation before scanning.
 
 ### Global search
 
@@ -348,6 +351,19 @@ Stockfish runs **client-side** in a Web Worker when you enable analysis. It does
 Analysis **stops and restarts** when you navigate to a new position. If the engine fails to load, study mode continues to work normally.
 
 Disclaimer shown in the panel: engine suggestions may differ from your repertoire preparation.
+
+### Compare moves
+
+At a **branching point** (two or more repertoire continuations), click **Compare moves** above the move list.
+
+| Behavior | Detail |
+|----------|--------|
+| **When shown** | Only when 2+ move choices exist at the current position |
+| **What it does** | Stockfish analyzes up to 3 alternatives (depth 16) |
+| **Badges** | Each choice shows engine eval and delta from the best alternative |
+| **Labeling** | "Engine suggestion" — not a judgment that repertoire moves are wrong |
+
+Compare is user-initiated only. Navigating away cancels an in-progress comparison. Running compare stops any active engine-panel analysis (and vice versa).
 
 ### Duplicate & Edit
 

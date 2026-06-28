@@ -16,6 +16,17 @@ export {
   uciToSan,
 } from "./uci";
 export {
+  compareMoves,
+  COMPARE_MOVES_DEPTH,
+  COMPARE_MOVES_MAX_ALTERNATIVES,
+  ENGINE_SUGGESTION_LABEL,
+  formatCompareDelta,
+  scoreForMoverFromEvaluation,
+  sideToMoveFromFen,
+  type CompareAlternative,
+  type CompareMoveResult,
+} from "./compareMoves";
+export {
   createStockfishEngine,
   getStockfishEngine,
   resetStockfishEngine,

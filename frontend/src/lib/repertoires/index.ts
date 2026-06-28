@@ -117,6 +117,22 @@ export {
   isValidRepertoireMeta,
   migrateRepertoire,
 } from "./meta";
+export {
+  BLUNDER_DROP_THRESHOLD_CP,
+  BLUNDER_SCAN_DEPTH,
+  blunderReportStorageKey,
+  clearBlunderReport,
+  collectScanTargets,
+  countScanNodes,
+  formatDropCp,
+  isValidBlunderReport,
+  loadBlunderReport,
+  saveBlunderReport,
+  scanRepertoireForBlunders,
+  type BlunderFlag,
+  type BlunderReport,
+  type BlunderScanProgress,
+} from "./blunderReport";
 export type {
   Repertoire,
   RepertoireChapter,

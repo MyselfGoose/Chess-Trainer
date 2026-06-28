@@ -4,8 +4,8 @@ import type { MoveChoice, StudyGame } from "@/lib/pgn";
 import type { BoardOrientation } from "@/lib/repertoires";
 
 import { EnginePanel } from "@/components/engine/EnginePanel";
+import { CompareMovesBranch } from "./CompareMovesSection";
 import { PgnCommentCard } from "./PgnCommentCard";
-import { PgnMoveChoices } from "./PgnMoveChoices";
 
 interface PgnStudyMovesPanelProps {
   currentGame: StudyGame;
@@ -32,7 +32,9 @@ export function PgnStudyMovesPanel({
 }: PgnStudyMovesPanelProps) {
   const currentNode = currentNodeId ? currentGame.nodes[currentNodeId] : null;
   const canGoBack = Boolean(currentNode?.parentId);
-  const isAtRoot = currentNode?.id === currentGame.rootId;
+  const branchKey = `${boardFen}|${availableMoves
+    .map((choice) => choice.node.id)
+    .join(",")}`;
 
   return (
     <aside className="flex h-full min-h-0 w-full flex-col gap-3 overflow-hidden p-3 lg:p-4">
@@ -44,13 +46,16 @@ export function PgnStudyMovesPanel({
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg bg-background ring-1 ring-border">
         <div className="min-h-0 flex-1 overflow-y-auto p-3">
-          <PgnMoveChoices
-            choices={availableMoves}
+          <CompareMovesBranch
+            branchKey={branchKey}
+            boardFen={boardFen}
+            orientation={orientation}
+            availableMoves={availableMoves}
             currentNodeId={currentNodeId}
             turnLabel={turnLabel}
             isAtLineEnd={isAtLineEnd}
-            isAtRoot={isAtRoot}
-            onSelect={onSelectChoice}
+            isAtRoot={currentNode?.id === currentGame.rootId}
+            onSelectChoice={onSelectChoice}
           />
         </div>
       </div>

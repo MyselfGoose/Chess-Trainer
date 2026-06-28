@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import { BlunderReportPanel } from "@/components/repertoires/BlunderReportPanel";
 import { CoverageMap } from "@/components/training/CoverageMap";
 import { formatPassRate } from "@/lib/training/history";
 import { extractTrainingLines } from "@/lib/training/lines";
@@ -178,6 +179,8 @@ export function RepertoireDashboard({
         />
         <SummaryCard label="Weak lines" value={analytics.weakLineCount} />
       </dl>
+
+      <BlunderReportPanel repertoire={repertoire} />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="rounded-xl border border-border bg-surface p-4">

@@ -144,6 +144,7 @@ export function PgnStudyPanel({
           turnLabel={turnLabel}
           isAtLineEnd={isAtLineEnd}
           isAtRoot={isAtRoot}
+          orientation="white"
           onSelect={onSelectChoice}
         />
       </div>
