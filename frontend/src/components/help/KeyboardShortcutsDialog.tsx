@@ -12,6 +12,7 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
     title: "Global",
     items: [
       { keys: "?", description: "Show this shortcuts dialog" },
+      { keys: "Cmd+K / Ctrl+K", description: "Search across all repertoires" },
       { keys: "Theme toggle", description: "Use the sun/moon button in the navbar" },
     ],
   },

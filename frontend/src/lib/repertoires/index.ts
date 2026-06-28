@@ -104,6 +104,13 @@ export {
 export type { CopyLineRequest, GraftFenCheck } from "./copyLine";
 export { gameHasMoves, setGameStartFen } from "./setStartFen";
 export {
+  computeRepertoireAnalytics,
+  type ChapterBreakdownRow,
+  type DepthBucket,
+  type OpeningCount,
+  type RepertoireAnalytics,
+} from "./analytics";
+export {
   bumpRepertoireVersion,
   DEFAULT_REPERTOIRE_META,
   isValidRepertoire,

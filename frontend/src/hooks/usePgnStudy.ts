@@ -106,13 +106,35 @@ const EMPTY_STUDY_STATE: StudyUiState = {
   orientation: "white",
 };
 
-function readStudyState(repertoireId: string): StudyUiState {
+export interface StudyDeepLink {
+  gameIndex: number;
+  nodeId: string;
+}
+
+function readStudyState(
+  repertoireId: string,
+  deepLink?: StudyDeepLink,
+): StudyUiState {
   const repertoire = getRepertoire(repertoireId);
   if (!repertoire || repertoire.games.length === 0) {
     return { ...EMPTY_STUDY_STATE };
   }
 
   const session = loadStudySession(repertoireId);
+
+  if (deepLink) {
+    const game = repertoire.games[deepLink.gameIndex];
+    if (game?.nodes[deepLink.nodeId]) {
+      return {
+        repertoire,
+        currentNodeId: deepLink.nodeId,
+        tipNodeId: deepLink.nodeId,
+        selectedGameIndex: deepLink.gameIndex,
+        orientation: session?.orientation ?? "white",
+      };
+    }
+  }
+
   const gameIndex = session?.selectedGameIndex ?? 0;
   const game = repertoire.games[gameIndex] ?? repertoire.games[0];
   const defaultNodeId = game.rootId;
@@ -157,17 +179,38 @@ function buildSessionState(
   };
 }
 
-export function usePgnStudy(repertoireId: string): UsePgnStudyResult {
+export function usePgnStudy(
+  repertoireId: string,
+  deepLink?: StudyDeepLink,
+): UsePgnStudyResult {
   const [uiState, setUiState] = useState<StudyUiState>(EMPTY_STUDY_STATE);
   const [isHydrated, setIsHydrated] = useState(false);
   const { repertoire, currentNodeId, tipNodeId, selectedGameIndex, orientation } =
     uiState;
 
   useEffect(() => {
+    const state = readStudyState(repertoireId, deepLink);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is client-only
-    setUiState(readStudyState(repertoireId));
+    setUiState(state);
+    if (
+      deepLink &&
+      state.currentNodeId === deepLink.nodeId &&
+      state.selectedGameIndex === deepLink.gameIndex
+    ) {
+      persistSession(
+        repertoireId,
+        buildSessionState(
+          deepLink.nodeId,
+          deepLink.gameIndex,
+          deepLink.nodeId,
+          state.orientation,
+        ),
+      );
+    }
     setIsHydrated(true);
-  }, [repertoireId]);
+  // deepLink identity is keyed by gameIndex/nodeId only
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [repertoireId, deepLink?.gameIndex, deepLink?.nodeId]);
 
   const reloadStudy = useCallback(() => {
     setUiState(readStudyState(repertoireId));

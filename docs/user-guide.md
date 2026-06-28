@@ -110,6 +110,7 @@ Each card shows:
 | Action | Description |
 |--------|-------------|
 | **Study** | Open interactive study mode |
+| **Dashboard** | Open training analytics for this repertoire |
 | **Train** | Open training setup for this repertoire |
 | **Edit** | Open the builder (created repertoires only) |
 | **Duplicate & Edit** | Fork an imported repertoire into an editable copy (imported only) |
@@ -148,6 +149,35 @@ Use **Export PGN** in the study header to download with scope options (current g
 Below the path bar, an **opening badge** shows the ECO code and name when recognized (e.g. `C50 — Italian Game`). The starting position shows no badge.
 
 In **training setup**, check one or more chapters to limit the session to those lines. Leave all unchecked to train every line for your color. The `?chapter=` URL parameter pre-selects a chapter (from study badges).
+
+### Repertoire dashboard
+
+**Route:** `/repertoires/[id]/dashboard` — click **Dashboard** on a repertoire card.
+
+Analytics overview before you study or train:
+
+| Widget | What it shows |
+|--------|----------------|
+| **Summary cards** | Total lines, training coverage %, last studied date, weak line count |
+| **Lines by opening** | ECO bar chart — how many lines fall under each opening |
+| **Depth histogram** | Line counts by ply depth (1–4, 5–8, 9–12, 13+) |
+| **Weak lines** | Lines with pass rate below 50% after 2+ attempts; links to filtered training |
+| **Chapter breakdown** | Lines, trained count, and weak count per chapter (plus unassigned lines) |
+| **Coverage map** | Color grid of mastery level per line |
+
+Coverage % counts lines where mastery level is beyond **new** (you have started training them).
+
+### Global search
+
+Press **Cmd+K** (Mac) or **Ctrl+K** (Windows/Linux), or click the search icon in the navbar.
+
+Search across **all repertoires** at once:
+
+- **Move sequences** — e.g. `Nf3`, `1. e4 c5`
+- **Comments** — text from builder position notes
+- **Positions** — paste a FEN to find matching nodes
+
+Results are grouped by repertoire. Select a result to open **study mode** at that exact position.
 
 ### Merge repertoires
 

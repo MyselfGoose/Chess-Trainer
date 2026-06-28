@@ -202,6 +202,12 @@ export function RepertoireCard({ repertoire, onRefresh }: RepertoireCardProps) {
         >
           Study
         </Link>
+        <Link
+          href={`/repertoires/${repertoire.id}/dashboard`}
+          className="rounded-lg bg-surface px-3 py-1.5 text-sm font-medium text-foreground/90 ring-1 ring-border transition hover:bg-background"
+        >
+          Dashboard
+        </Link>
         {repertoire.source === "created" ? (
           <button
             type="button"

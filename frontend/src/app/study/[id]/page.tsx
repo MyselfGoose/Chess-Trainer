@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { use, useCallback, useMemo, useRef, useState, type ReactNode } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { use, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Square } from "chess.js";
 
 import { ChessBoard } from "@/components/chess/ChessBoard";
@@ -23,7 +23,7 @@ import { findGaps } from "@/lib/repertoires/gaps";
 import { getChaptersForLine } from "@/lib/repertoires";
 import { useBoardAnnotationState } from "@/hooks/useBoardAnnotationState";
 import { useOpeningLookup } from "@/hooks/useOpeningLookup";
-import { usePgnStudy } from "@/hooks/usePgnStudy";
+import { usePgnStudy, type StudyDeepLink } from "@/hooks/usePgnStudy";
 
 interface StudyPendingPromotion {
   from: Square;
@@ -67,13 +67,34 @@ export default function StudyPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
-  const study = usePgnStudy(id);
+  const searchParams = useSearchParams();
+  const deepLink = useMemo((): StudyDeepLink | undefined => {
+    const nodeId = searchParams.get("node");
+    if (!nodeId) {
+      return undefined;
+    }
+    const gameRaw = searchParams.get("game");
+    const gameIndex = gameRaw ? Number.parseInt(gameRaw, 10) : 0;
+    if (!Number.isFinite(gameIndex) || gameIndex < 0) {
+      return undefined;
+    }
+    return { gameIndex, nodeId };
+  }, [searchParams]);
+
+  const study = usePgnStudy(id, deepLink);
   const boardAnnotations = useBoardAnnotationState();
   const boardNavRef = useRef<HTMLDivElement>(null);
   const [studyPromotion, setStudyPromotion] =
     useState<StudyPendingPromotion | null>(null);
   const [showFork, setShowFork] = useState(false);
   const [showExport, setShowExport] = useState(false);
+
+  useEffect(() => {
+    if (!deepLink || !study.isHydrated || !study.hasStudy) {
+      return;
+    }
+    router.replace(`/study/${id}`, { scroll: false });
+  }, [deepLink, id, router, study.hasStudy, study.isHydrated]);
 
   const {
     setOrientation: setStudyOrientation,
