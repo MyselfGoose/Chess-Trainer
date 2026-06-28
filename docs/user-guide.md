@@ -119,6 +119,32 @@ The original imported repertoire is unchanged. The copy records `forkedFromId` i
 
 Click **New repertoire** to open the builder at `/repertoires/new`.
 
+### Repertoire detail (chapters & tags)
+
+**Route:** `/repertoires/[id]` — click a repertoire name on the library card.
+
+- **Tags** — add labels at the repertoire level (e.g. `prep`, `sicilian`).
+- **Chapters** — group trainable lines into named chapters.
+- **Auto-suggest** — groups lines by the first two full moves (four plies) and creates chapter names like `e4 c5 / Nf3 d6`.
+- Assign lines to chapters via checkboxes when editing a chapter.
+- Reorder chapters with Up/Down; delete removes the chapter only (lines stay in the repertoire).
+
+In **study mode**, chapter badges appear at line endings; click a badge to train that chapter, or use **Manage chapters** to edit.
+
+In **training setup**, check one or more chapters to limit the session to those lines. Leave all unchecked to train every line for your color. The `?chapter=` URL parameter pre-selects a chapter (from study badges).
+
+### Merge repertoires
+
+On `/repertoires`, click **Merge repertoires**:
+
+1. Pick primary (A) and secondary (B) repertoires.
+2. Name the merged result (default: `A + B`).
+3. Optionally include B's registered lines (created repertoires only).
+4. Confirm — a new **Created** repertoire contains all games from both sources.
+5. Optionally delete A and B after merge (off by default).
+
+Event headers are deduplicated when both repertoires use the same game title.
+
 ---
 
 ## Building repertoires

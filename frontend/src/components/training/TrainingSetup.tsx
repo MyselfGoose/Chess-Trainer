@@ -22,6 +22,10 @@ import {
   type OpponentPolicy,
 } from "@/lib/training";
 import {
+  filterLinesByChapterIds,
+  sortedChapters,
+} from "@/lib/repertoires";
+import {
   isTrainingSoundEnabled,
   setTrainingSoundEnabled,
 } from "@/lib/training/sounds";
@@ -41,6 +45,7 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
   const searchParams = useSearchParams();
   const anchorParam = searchParams.get("anchor");
   const colorParam = searchParams.get("color");
+  const chapterParam = searchParams.get("chapter");
 
   const [isHydrated, setIsHydrated] = useState(false);
   const [userColor, setUserColor] = useState<TrainingColor>(
@@ -52,6 +57,9 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [opponentPolicy, setOpponentPolicy] = useState<OpponentPolicy>("mainline");
   const [selectedLineIds, setSelectedLineIds] = useState<Set<string>>(new Set());
+  const [selectedChapterIds, setSelectedChapterIds] = useState<Set<string>>(
+    new Set(),
+  );
   const [page, setPage] = useState(0);
   const [linesExpanded, setLinesExpanded] = useState(false);
   const [repertoire, setRepertoire] = useState<ReturnType<typeof getRepertoire>>(
@@ -87,22 +95,46 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
     );
   }, [anchorParam, colorFilteredLines, repertoire]);
 
+  const chapterFilteredLines = useMemo(() => {
+    if (!repertoire) {
+      return anchorFilteredLines;
+    }
+    const chapterIds = [...selectedChapterIds];
+    return filterLinesByChapterIds(repertoire, anchorFilteredLines, chapterIds);
+  }, [anchorFilteredLines, repertoire, selectedChapterIds]);
+
+  const chapters = useMemo(
+    () => (repertoire ? sortedChapters(repertoire.meta) : []),
+    [repertoire],
+  );
+
+  useEffect(() => {
+    if (!repertoire || !chapterParam) {
+      return;
+    }
+    if (repertoire.meta.chapters.some((chapter) => chapter.id === chapterParam)) {
+      /* eslint-disable react-hooks/set-state-in-effect -- URL preselect */
+      setSelectedChapterIds(new Set([chapterParam]));
+      /* eslint-enable react-hooks/set-state-in-effect */
+    }
+  }, [chapterParam, repertoire]);
+
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- reset selection when filters change */
-    setSelectedLineIds(new Set(anchorFilteredLines.map((line) => line.id)));
+    setSelectedLineIds(new Set(chapterFilteredLines.map((line) => line.id)));
     setPage(0);
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [anchorFilteredLines, userColor]);
+  }, [chapterFilteredLines, userColor]);
 
-  const selectedLines = anchorFilteredLines.filter((line) =>
+  const selectedLines = chapterFilteredLines.filter((line) =>
     selectedLineIds.has(line.id),
   );
 
-  const pagedLines = anchorFilteredLines.slice(
+  const pagedLines = chapterFilteredLines.slice(
     page * PAGE_SIZE,
     (page + 1) * PAGE_SIZE,
   );
-  const totalPages = Math.ceil(anchorFilteredLines.length / PAGE_SIZE);
+  const totalPages = Math.ceil(chapterFilteredLines.length / PAGE_SIZE);
 
   const weakLineIds = useMemo(() => {
     if (!repertoire) {
@@ -162,6 +194,10 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
       lineIds: selectedLines.map((line) => line.id),
       maxLines,
       anchorLeafNodeId: anchorParam ?? undefined,
+      chapterIds:
+        selectedChapterIds.size > 0
+          ? [...selectedChapterIds]
+          : undefined,
       showCommentsAfterLine: showComments || mode === "learn",
       soundEnabled,
       opponentPolicy,
@@ -181,8 +217,45 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
 
         {anchorParam ? (
           <p className="mt-2 text-sm text-accent">
-            {anchorFilteredLines.length} lines from this position
+            {chapterFilteredLines.length} lines from this position
           </p>
+        ) : null}
+
+        {chapters.length > 0 ? (
+          <div className="mt-4">
+            <p className="mb-2 text-sm font-medium text-foreground/90">
+              Chapters ({chapterFilteredLines.length} lines
+              {selectedChapterIds.size > 0 ? " in filter" : ""})
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {chapters.map((chapter) => (
+                <label
+                  key={chapter.id}
+                  className="flex min-h-11 cursor-pointer items-center gap-2 rounded-md bg-surface-muted px-2 py-1 text-xs"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedChapterIds.has(chapter.id)}
+                    onChange={(event) => {
+                      setSelectedChapterIds((current) => {
+                        const next = new Set(current);
+                        if (event.target.checked) {
+                          next.add(chapter.id);
+                        } else {
+                          next.delete(chapter.id);
+                        }
+                        return next;
+                      });
+                    }}
+                  />
+                  {chapter.name} ({chapter.lineIds.length})
+                </label>
+              ))}
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Leave all unchecked to train every line for your color.
+            </p>
+          </div>
         ) : null}
 
         {!hasRegisteredLines ? (
@@ -269,7 +342,7 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
                   type="button"
                   onClick={() =>
                     setSelectedLineIds(
-                      new Set(anchorFilteredLines.map((line) => line.id)),
+                      new Set(chapterFilteredLines.map((line) => line.id)),
                     )
                   }
                   className="rounded-md bg-surface-muted px-2 py-1 text-xs font-medium text-foreground/90"
@@ -344,7 +417,7 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
               ) : null}
             </details>
 
-            <CoverageMap lines={anchorFilteredLines} repertoireId={repertoireId} />
+            <CoverageMap lines={chapterFilteredLines} repertoireId={repertoireId} />
 
             <div className="mt-6 space-y-2">
               <label className="flex items-center gap-2 text-sm text-foreground/90">

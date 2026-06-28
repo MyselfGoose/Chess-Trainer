@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import type { LineStats, StudyGame, StudyNode } from "@/lib/pgn";
 import type { RepertoireGap } from "@/lib/repertoires/gaps";
 
@@ -44,12 +46,12 @@ export function PgnStudyToolsPanel({
         <h2 className="truncate text-base font-semibold text-foreground lg:text-lg">
           {repertoireName ?? "Repertoire"}
         </h2>
-        <a
+        <Link
           href="/repertoires"
           className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-accent transition hover:bg-accent-muted"
         >
           Library
-        </a>
+        </Link>
       </div>
 
       {onSelectSearchLine ? (

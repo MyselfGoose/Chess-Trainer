@@ -66,6 +66,28 @@ export {
 } from "./treeMutations";
 export type { TreeMutationResult } from "./treeMutations";
 export {
+  addChapter,
+  addRepertoireTag,
+  applySuggestedChapters,
+  assignLinesToChapter,
+  createChapter,
+  deleteChapter,
+  filterLinesByChapterIds,
+  filterLinesByChapters,
+  getChaptersForLine,
+  moveChapter,
+  removeLinesFromChapter,
+  removeRepertoireTag,
+  reorderChapters,
+  setChapterLines,
+  sortedChapters,
+  suggestChaptersFromLines,
+  updateChapter,
+} from "./chapters";
+export type { SuggestedChapter } from "./chapters";
+export { mergeRepertoires } from "./merge";
+export type { MergeRepertoiresOptions, MergeRepertoiresResult } from "./merge";
+export {
   bumpRepertoireVersion,
   DEFAULT_REPERTOIRE_META,
   isValidRepertoire,

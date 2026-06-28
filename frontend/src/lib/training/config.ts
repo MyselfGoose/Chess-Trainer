@@ -13,6 +13,8 @@ export interface TrainingSessionConfig {
   maxLines: number;
   /** Start from this node path (train-from-here) */
   anchorLeafNodeId?: string;
+  /** Filter training to lines in these chapters; empty/undefined = all */
+  chapterIds?: string[];
   showCommentsAfterLine: boolean;
   soundEnabled: boolean;
   opponentPolicy: OpponentPolicy;
@@ -69,6 +71,12 @@ function validateConfig(value: unknown): TrainingSessionConfig | null {
   ) {
     return null;
   }
+  if (
+    record.chapterIds !== undefined &&
+    !isStringArray(record.chapterIds)
+  ) {
+    return null;
+  }
   return {
     repertoireId: record.repertoireId,
     userColor: record.userColor,
@@ -76,6 +84,7 @@ function validateConfig(value: unknown): TrainingSessionConfig | null {
     lineIds: record.lineIds,
     maxLines: record.maxLines,
     anchorLeafNodeId: record.anchorLeafNodeId,
+    chapterIds: isStringArray(record.chapterIds) ? record.chapterIds : undefined,
     showCommentsAfterLine: record.showCommentsAfterLine,
     soundEnabled: record.soundEnabled,
     opponentPolicy: isOpponentPolicy(record.opponentPolicy)

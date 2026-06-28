@@ -19,6 +19,7 @@ import type { PromotionPiece } from "@/lib/chess/types";
 import { annotationsFromPgnNode } from "@/lib/chess/annotations";
 import { findAlternativePaths } from "@/lib/pgn/transpositions";
 import { findGaps } from "@/lib/repertoires/gaps";
+import { getChaptersForLine } from "@/lib/repertoires";
 import { useBoardAnnotationState } from "@/hooks/useBoardAnnotationState";
 import { usePgnStudy } from "@/hooks/usePgnStudy";
 
@@ -137,6 +138,24 @@ export default function StudyPage({
       ? `/training/${study.repertoire.id}?anchor=${study.currentNodeId}&color=${trainColor}`
       : null;
 
+  const currentLineId = useMemo(() => {
+    if (!study.currentGame || !study.currentNodeId) {
+      return null;
+    }
+    const node = study.currentGame.nodes[study.currentNodeId];
+    if (!node || node.childIds.length > 0 || node.id === study.currentGame.rootId) {
+      return null;
+    }
+    return `${study.selectedGameIndex}:${study.currentNodeId}`;
+  }, [study.currentGame, study.currentNodeId, study.selectedGameIndex]);
+
+  const lineChapters = useMemo(() => {
+    if (!currentLineId || !study.repertoire) {
+      return [];
+    }
+    return getChaptersForLine(study.repertoire.meta, currentLineId);
+  }, [currentLineId, study.repertoire]);
+
   if (!study.isHydrated) {
     return (
       <div className="flex h-full min-h-0 items-center justify-center bg-surface-muted">
@@ -240,6 +259,35 @@ export default function StudyPage({
         {transpositionLabels.length > 0 ? (
           <div className="mb-3 rounded-lg bg-info-muted px-3 py-2 text-sm text-info-foreground ring-1 ring-info/30">
             Also reached via: {transpositionLabels.join(" · ")}
+          </div>
+        ) : null}
+
+        {lineChapters.length > 0 ? (
+          <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
+            {lineChapters.map((chapter) => (
+              <Link
+                key={chapter.id}
+                href={`/training/${study.repertoire!.id}?chapter=${chapter.id}&color=${trainColor}`}
+                className="rounded-full bg-purple-50 px-2 py-0.5 text-xs font-medium text-purple-700 ring-1 ring-purple-200"
+              >
+                {chapter.name}
+              </Link>
+            ))}
+            <Link
+              href={`/repertoires/${study.repertoire.id}`}
+              className="text-xs font-medium text-accent hover:underline"
+            >
+              Manage chapters
+            </Link>
+          </div>
+        ) : study.repertoire.meta.chapters.length === 0 ? (
+          <div className="mb-3">
+            <Link
+              href={`/repertoires/${study.repertoire.id}`}
+              className="text-xs font-medium text-muted-foreground hover:text-accent"
+            >
+              Add chapters to organize lines
+            </Link>
           </div>
         ) : null}
 

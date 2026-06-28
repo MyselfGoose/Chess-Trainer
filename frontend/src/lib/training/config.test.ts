@@ -8,6 +8,16 @@ import {
 } from "./config";
 
 describe("training config encode/decode", () => {
+  it("round-trips a full config with chapterIds", () => {
+    const config = {
+      ...createDefaultTrainingConfig("rep-1", "white"),
+      lineIds: ["0:leaf-a"],
+      chapterIds: ["chapter-1", "chapter-2"],
+    };
+    const encoded = encodeTrainingConfig(config);
+    expect(decodeTrainingConfig(encoded)).toEqual(config);
+  });
+
   it("round-trips a full config", () => {
     const config = {
       ...createDefaultTrainingConfig("rep-1", "white"),

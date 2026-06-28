@@ -1,9 +1,15 @@
-import Link from "next/link";
+"use client";
 
+import Link from "next/link";
+import { useState } from "react";
+
+import { MergeRepertoiresModal } from "@/components/repertoires/MergeRepertoiresModal";
 import { RepertoireBackupSection } from "@/components/repertoires/RepertoireBackupSection";
 import { RepertoireList } from "@/components/repertoires/RepertoireList";
 
 export default function RepertoiresPage() {
+  const [showMerge, setShowMerge] = useState(false);
+
   return (
     <div className="min-h-full overflow-y-auto bg-surface-muted">
       <div className="mx-auto max-w-5xl px-4 py-10">
@@ -15,6 +21,13 @@ export default function RepertoiresPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setShowMerge(true)}
+              className="rounded-lg bg-surface px-4 py-2 text-sm font-semibold text-foreground ring-1 ring-border-strong transition hover:bg-background"
+            >
+              Merge repertoires
+            </button>
             <Link
               href="/upload"
               className="rounded-lg bg-surface px-4 py-2 text-sm font-semibold text-foreground ring-1 ring-border-strong transition hover:bg-background"
@@ -33,6 +46,13 @@ export default function RepertoiresPage() {
         <RepertoireList />
         <RepertoireBackupSection />
       </div>
+
+      {showMerge ? (
+        <MergeRepertoiresModal
+          onComplete={() => setShowMerge(false)}
+          onCancel={() => setShowMerge(false)}
+        />
+      ) : null}
     </div>
   );
 }

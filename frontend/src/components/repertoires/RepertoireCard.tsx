@@ -139,9 +139,12 @@ export function RepertoireCard({ repertoire, onRefresh }: RepertoireCardProps) {
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <h3 className="truncate text-lg font-semibold text-foreground">
+              <Link
+                href={`/repertoires/${repertoire.id}`}
+                className="truncate text-lg font-semibold text-foreground hover:text-accent"
+              >
                 {repertoire.name}
-              </h3>
+              </Link>
               <button
                 type="button"
                 onClick={() => setShowRename(true)}
