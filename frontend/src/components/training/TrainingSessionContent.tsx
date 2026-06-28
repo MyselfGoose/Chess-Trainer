@@ -229,6 +229,8 @@ export function TrainingSessionContent({
           isUserTurn={training.isUserTurn}
           isAnimatingOpponent={training.isAnimatingOpponent}
           feedback={training.feedback}
+          positionHint={training.positionHint}
+          positionContext={training.positionContext}
           phase={training.phase}
           onAdvanceFeedback={training.advanceFromFeedback}
           onEndTraining={handleEndTraining}

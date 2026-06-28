@@ -25,6 +25,7 @@ import {
   filterLinesFromAnchorForGame,
   getCurrentLine,
   getMasteryForRepertoire,
+  getTrainingPositionContext,
   hasPendingOpponentAnimation,
   prioritizeLines,
   recordLineResult,
@@ -35,6 +36,8 @@ import {
   type TrainingEngineState,
   type TrainingFeedback,
   type TrainingPhase,
+  type TrainingPositionContext,
+  type TrainingPositionHint,
   type TrainingSessionConfig,
   type TrainingSessionSummary,
 } from "@/lib/training";
@@ -89,6 +92,8 @@ export interface UseTrainingSessionResult {
   userMoveProgressLabel: string | null;
   currentLineLabel: string | null;
   feedback: TrainingFeedback | null;
+  positionHint: TrainingPositionHint | null;
+  positionContext: TrainingPositionContext | null;
   summary: TrainingSessionSummary | null;
   tryUserMoveOnBoard: (from: Square, to: Square) => boolean;
   needsPromotion: (from: Square, to: Square) => boolean;
@@ -336,16 +341,24 @@ export function useTrainingSession({
       if (next === engineState) {
         return false;
       }
+
+      const isAlternateRepertoireMove = next.positionHint !== null;
+
       if (config?.soundEnabled) {
-        playChessMoveSound({
-          san: playedSan,
-          captured: captured ?? null,
-          promotion: promotion ?? null,
-          flags,
-        });
+        if (isAlternateRepertoireMove) {
+          playNotificationSound();
+        } else {
+          playChessMoveSound({
+            san: playedSan,
+            captured: captured ?? null,
+            promotion: promotion ?? null,
+            flags,
+          });
+        }
       }
+
       setEngineState(next);
-      return true;
+      return !isAlternateRepertoireMove;
     },
     [config?.soundEnabled, engineInput, engineState],
   );
@@ -393,16 +406,24 @@ export function useTrainingSession({
       if (next === engineState) {
         return false;
       }
+
+      const isAlternateRepertoireMove = next.positionHint !== null;
+
       if (config?.soundEnabled) {
-        playChessMoveSound({
-          san: playedSan,
-          captured: captured ?? null,
-          promotion: promotion ?? null,
-          flags,
-        });
+        if (isAlternateRepertoireMove) {
+          playNotificationSound();
+        } else {
+          playChessMoveSound({
+            san: playedSan,
+            captured: captured ?? null,
+            promotion: promotion ?? null,
+            flags,
+          });
+        }
       }
+
       setEngineState(next);
-      return true;
+      return !isAlternateRepertoireMove;
     },
     [config?.soundEnabled, engineInput, engineState],
   );
@@ -420,6 +441,11 @@ export function useTrainingSession({
     }
     setEngineState(endTrainingEarly(engineState, engineInput));
   }, [engineInput, engineState]);
+
+  const positionContext =
+    engineState && engineInput
+      ? getTrainingPositionContext(engineState, engineInput)
+      : null;
 
   const userMoveProgressLabel =
     engineState && currentLine && engineState.waitingForUser
@@ -446,6 +472,8 @@ export function useTrainingSession({
     userMoveProgressLabel,
     currentLineLabel: currentLine?.label ?? null,
     feedback: engineState?.feedback ?? null,
+    positionHint: engineState?.positionHint ?? null,
+    positionContext,
     summary: engineState?.summary ?? null,
     tryUserMoveOnBoard,
     needsPromotion,

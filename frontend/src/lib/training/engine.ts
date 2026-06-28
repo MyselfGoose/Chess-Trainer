@@ -1,8 +1,8 @@
 import type { Square } from "chess.js";
 
 import type { PromotionPiece } from "@/lib/chess/types";
-import { findChoiceByMove } from "@/lib/pgn";
-import type { StudyGame } from "@/lib/pgn";
+import { findChoiceByMove, getMoveChoices } from "@/lib/pgn";
+import type { StudyGame, StudyNode } from "@/lib/pgn";
 
 import type { OpponentPolicy, TrainingMode } from "./config";
 import { countUserMovesInLine } from "./lines";
@@ -12,6 +12,7 @@ import type {
   TrainingLine,
   TrainingLineResult,
   TrainingPhase,
+  TrainingPositionHint,
   TrainingSessionSummary,
 } from "./types";
 import { trainingColorToNodeColor } from "./types";
@@ -28,6 +29,7 @@ export interface TrainingEngineState {
   userMovesPlayedInLine: number;
   results: TrainingLineResult[];
   feedback: TrainingFeedback | null;
+  positionHint: TrainingPositionHint | null;
   summary: TrainingSessionSummary | null;
   isAnimatingOpponent: boolean;
 }
@@ -129,6 +131,7 @@ export function createTrainingEngine(
     currentLineIndex: 0,
     results: [],
     feedback: null,
+    positionHint: null,
     summary: null,
     ...(firstLine
       ? initialLineState(input, firstLine)
@@ -164,6 +167,107 @@ export function getExpectedUserMove(
   return expected;
 }
 
+export interface TrainingPositionContext {
+  expectedSan: string | null;
+  repertoireChoices: Array<{
+    san: string;
+    isExpected: boolean;
+    isMainLine: boolean;
+  }>;
+}
+
+export function getTrainingPositionContext(
+  state: TrainingEngineState,
+  input: CreateTrainingEngineInput,
+): TrainingPositionContext | null {
+  const line = getCurrentLine(state);
+  const parentId = state.currentParentNodeId;
+  if (
+    !line ||
+    !parentId ||
+    state.phase !== "active" ||
+    !state.waitingForUser
+  ) {
+    return null;
+  }
+
+  const game = getGameForLine(input, line);
+  const expected = line.moves[state.moveIndex];
+  const choices = getMoveChoices(game, parentId);
+
+  return {
+    expectedSan: expected?.san ?? null,
+    repertoireChoices: choices.map((choice) => ({
+      san: choice.node.san,
+      isExpected: choice.node.id === expected?.id,
+      isMainLine: choice.isMainLine,
+    })),
+  };
+}
+
+function buildAlternateMoveHint(
+  game: StudyGame,
+  parentId: string,
+  expected: StudyNode,
+  matched: StudyNode,
+): TrainingPositionHint {
+  const choices = getMoveChoices(game, parentId);
+  const otherRepertoireSans = choices
+    .filter(
+      (choice) =>
+        choice.node.id !== expected.id && choice.node.id !== matched.id,
+    )
+    .map((choice) => choice.node.san);
+
+  return {
+    kind: "alternate_repertoire_move",
+    playedSan: matched.san,
+    expectedSan: expected.san,
+    otherRepertoireSans,
+  };
+}
+
+function handleWrongUserMove(
+  state: TrainingEngineState,
+  input: CreateTrainingEngineInput,
+  playedSan: string,
+  expectedSan: string,
+): TrainingEngineState {
+  const failed = completeLineFailed(state, input, playedSan, expectedSan);
+
+  if (input.mode === "survival") {
+    return {
+      ...failed,
+      phase: "summary",
+      summary: buildSummary(input, failed.results, state.lines, false),
+    };
+  }
+
+  if (input.mode === "learn") {
+    return {
+      ...failed,
+      feedback: {
+        ...failed.feedback!,
+        message: `Hint: expected ${expectedSan}`,
+      },
+    };
+  }
+
+  if (input.mode === "test") {
+    return {
+      ...failed,
+      feedback: {
+        passed: false,
+        message: "Line recorded",
+        expectedSan,
+        playedSan,
+      },
+    };
+  }
+
+  return failed;
+}
+
 export function applyNextOpponentMove(
   state: TrainingEngineState,
   input: CreateTrainingEngineInput,
@@ -184,6 +288,7 @@ export function applyNextOpponentMove(
       ...state,
       waitingForUser: true,
       isAnimatingOpponent: false,
+      positionHint: null,
     };
   }
 
@@ -196,6 +301,7 @@ export function applyNextOpponentMove(
     moveIndex: state.moveIndex + 1,
     waitingForUser: false,
     isAnimatingOpponent: true,
+    positionHint: null,
   };
 
   if (nextState.moveIndex >= line.moves.length) {
@@ -242,7 +348,12 @@ export function startLineWalk(
     const userNodeColor = trainingColorToNodeColor(input.userColor);
     const nextMove = line?.moves[state.moveIndex];
     if (nextMove && nextMove.color === userNodeColor) {
-      return { ...state, waitingForUser: true, isAnimatingOpponent: false };
+      return {
+        ...state,
+        waitingForUser: true,
+        isAnimatingOpponent: false,
+        positionHint: null,
+      };
     }
     return state;
   }
@@ -276,6 +387,7 @@ function completeLinePassed(
     ...state,
     waitingForUser: false,
     isAnimatingOpponent: false,
+    positionHint: null,
     results: [...state.results, result],
     feedback: {
       passed: true,
@@ -310,6 +422,7 @@ function completeLineFailed(
     ...state,
     waitingForUser: false,
     isAnimatingOpponent: false,
+    positionHint: null,
     results: [...state.results, result],
     feedback: {
       passed: false,
@@ -347,42 +460,20 @@ export function tryUserMove(
     matched !== null && matched.id === expected.id;
 
   if (!isCorrect) {
-    const failed = completeLineFailed(
+    if (matched !== null) {
+      return {
+        ...state,
+        positionHint: buildAlternateMoveHint(game, parentId, expected, matched),
+        isAnimatingOpponent: false,
+      };
+    }
+
+    return handleWrongUserMove(
       state,
       input,
       playedSan ?? `${from}-${to}`,
       expected.san,
     );
-
-    if (input.mode === "survival") {
-      return {
-        ...failed,
-        phase: "summary",
-        summary: buildSummary(input, failed.results, state.lines, false),
-      };
-    }
-
-    if (input.mode === "learn") {
-      return {
-        ...failed,
-        feedback: {
-          ...failed.feedback!,
-          message: `Hint: expected ${expected.san}`,
-        },
-      };
-    }
-
-    if (input.mode === "test") {
-      return {
-        ...failed,
-        feedback: {
-          passed: false,
-          message: "Line recorded",
-        },
-      };
-    }
-
-    return failed;
   }
 
   const nextState: TrainingEngineState = {
@@ -397,6 +488,7 @@ export function tryUserMove(
     waitingForUser: false,
     userMovesPlayedInLine: state.userMovesPlayedInLine + 1,
     isAnimatingOpponent: false,
+    positionHint: null,
   };
 
   if (nextState.moveIndex >= line.moves.length) {
@@ -433,6 +525,7 @@ export function advanceFromFeedback(
       phase: "active",
       currentLineIndex: nextLineIndex,
       feedback: null,
+      positionHint: null,
       results: state.results,
       ...initialLineState(input, nextLine),
     },

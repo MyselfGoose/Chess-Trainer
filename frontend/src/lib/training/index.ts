@@ -13,6 +13,7 @@ export {
   endTrainingEarly,
   getCurrentLine,
   getExpectedUserMove,
+  getTrainingPositionContext,
   hasPendingOpponentAnimation,
   startLineWalk,
   tryUserMove,
@@ -20,6 +21,7 @@ export {
 export type {
   CreateTrainingEngineInput,
   TrainingEngineState,
+  TrainingPositionContext,
 } from "./engine";
 export {
   formatLastTrained,
@@ -72,6 +74,7 @@ export type {
   TrainingLine,
   TrainingLineResult,
   TrainingPhase,
+  TrainingPositionHint,
   TrainingSessionSummary,
 } from "./types";
 export {

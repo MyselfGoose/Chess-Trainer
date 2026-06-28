@@ -2,11 +2,13 @@ import { describe, expect, it } from "vitest";
 import type { Square } from "chess.js";
 
 import { parsePgnDatabase } from "@/lib/pgn/parse";
+import { applyMove, createEmptyStudyGame } from "@/lib/repertoires/treeBuilder";
 
 import {
   advanceFromFeedback,
   createTrainingEngine,
   endTrainingEarly,
+  getTrainingPositionContext,
   startLineWalk,
   tryUserMove,
   type CreateTrainingEngineInput,
@@ -19,6 +21,52 @@ const SIMPLE_PGN = `[Event "Test"]
 
 1. e4 e5 2. Nf3 Nc6 *
 `;
+
+function buildBranchingInput(): CreateTrainingEngineInput {
+  let game = createEmptyStudyGame("Branch");
+  const rootId = game.rootId;
+  const e4 = applyMove(game, rootId, "e2" as Square, "e4" as Square)!;
+  game = e4.game;
+  const e5 = applyMove(game, e4.nodeId, "e7" as Square, "e5" as Square)!;
+  game = e5.game;
+  const nf3 = applyMove(game, e5.nodeId, "g1" as Square, "f3" as Square)!;
+  game = nf3.game;
+  applyMove(game, nf3.nodeId, "b8" as Square, "c6" as Square);
+  const bc4 = applyMove(game, e5.nodeId, "f1" as Square, "c4" as Square)!;
+  game = bc4.game;
+  applyMove(game, bc4.nodeId, "b8" as Square, "c6" as Square);
+
+  const repertoire = {
+    id: "rep-branch",
+    name: "Branching",
+    source: "imported" as const,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    games: [game],
+    registeredLeafIds: [],
+  };
+
+  const nf3Line = filterLinesForColor(
+    extractTrainingLines(repertoire),
+    "white",
+  ).find((line) => line.moves.some((move) => move.san === "Nf3"));
+
+  if (!nf3Line) {
+    throw new Error("Expected Nf3 training line");
+  }
+
+  return {
+    repertoireId: repertoire.id,
+    repertoireName: repertoire.name,
+    userColor: "white",
+    lines: [nf3Line],
+    games: repertoire.games,
+    startedAt: new Date().toISOString(),
+    mode: "drill",
+    showCommentsAfterLine: false,
+    opponentPolicy: "mainline",
+  };
+}
 
 function buildInput(userColor: "white" | "black"): {
   input: CreateTrainingEngineInput;
@@ -135,5 +183,50 @@ describe("training engine", () => {
     expect(state.phase).toBe("summary");
     expect(state.summary?.endedEarly).toBe(true);
     expect(state.summary?.skippedLines.length).toBe(multiLineInput.lines.length);
+  });
+
+  it("accepts an alternate repertoire move with a hint instead of failing the line", () => {
+    const input = buildBranchingInput();
+
+    let state = startLineWalk(createTrainingEngine(input), input);
+
+    state = tryUserMove(state, input, "e2" as Square, "e4" as Square);
+    expect(state.waitingForUser).toBe(true);
+
+    const fenAtBranch = state.boardFen;
+    const context = getTrainingPositionContext(state, input);
+    expect(context?.repertoireChoices.length).toBeGreaterThan(1);
+
+    state = tryUserMove(
+      state,
+      input,
+      "f1" as Square,
+      "c4" as Square,
+      undefined,
+      "Bc4",
+    );
+
+    expect(state.phase).toBe("active");
+    expect(state.positionHint).toEqual({
+      kind: "alternate_repertoire_move",
+      playedSan: "Bc4",
+      expectedSan: "Nf3",
+      otherRepertoireSans: [],
+    });
+    expect(state.boardFen).toBe(fenAtBranch);
+    expect(state.waitingForUser).toBe(true);
+
+    state = tryUserMove(
+      state,
+      input,
+      "g1" as Square,
+      "f3" as Square,
+      undefined,
+      "Nf3",
+    );
+
+    expect(state.positionHint).toBeNull();
+    expect(state.phase).toBe("lineFeedback");
+    expect(state.feedback?.passed).toBe(true);
   });
 });

@@ -48,6 +48,14 @@ export interface TrainingFeedback {
   comment?: string;
 }
 
+/** Shown during active play when the user finds a valid repertoire move that is not this line. */
+export interface TrainingPositionHint {
+  kind: "alternate_repertoire_move";
+  playedSan: string;
+  expectedSan: string;
+  otherRepertoireSans: string[];
+}
+
 export function trainingColorToNodeColor(
   color: TrainingColor,
 ): "w" | "b" {

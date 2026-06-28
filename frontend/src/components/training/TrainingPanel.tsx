@@ -2,7 +2,11 @@
 
 import { useEffect } from "react";
 
-import type { TrainingFeedback } from "@/lib/training";
+import type {
+  TrainingFeedback,
+  TrainingPositionContext,
+  TrainingPositionHint,
+} from "@/lib/training";
 
 interface TrainingPanelProps {
   lineProgressLabel: string;
@@ -11,10 +15,84 @@ interface TrainingPanelProps {
   isUserTurn: boolean;
   isAnimatingOpponent: boolean;
   feedback: TrainingFeedback | null;
+  positionHint: TrainingPositionHint | null;
+  positionContext: TrainingPositionContext | null;
   phase: "active" | "lineFeedback" | "summary";
   onAdvanceFeedback: () => void;
   onEndTraining: () => void;
   onQuit: () => void;
+}
+
+function formatRepertoireMoveList(moves: string[]): string {
+  if (moves.length === 0) {
+    return "";
+  }
+  if (moves.length === 1) {
+    return moves[0];
+  }
+  if (moves.length === 2) {
+    return `${moves[0]} and ${moves[1]}`;
+  }
+  return `${moves.slice(0, -1).join(", ")}, and ${moves[moves.length - 1]}`;
+}
+
+function AlternateMoveHint({
+  hint,
+}: {
+  hint: TrainingPositionHint;
+}) {
+  const otherMoves = formatRepertoireMoveList(hint.otherRepertoireSans);
+
+  return (
+    <div
+      role="status"
+      className="rounded-md bg-info-muted px-3 py-2 ring-1 ring-info/30"
+    >
+      <p className="text-sm font-semibold text-info-foreground">
+        {hint.playedSan} is in your repertoire
+      </p>
+      <p className="mt-1 text-sm text-foreground/90">
+        This drill is practicing{" "}
+        <span className="font-mono font-semibold">{hint.expectedSan}</span> in
+        this position. Play that move to continue this line.
+      </p>
+      {otherMoves ? (
+        <p className="mt-2 text-xs text-muted-foreground">
+          Other repertoire options here: {otherMoves}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function BranchingPositionNotice({
+  context,
+}: {
+  context: TrainingPositionContext;
+}) {
+  const alternateMoves = context.repertoireChoices
+    .filter((choice) => !choice.isExpected)
+    .map((choice) => choice.san);
+
+  if (alternateMoves.length === 0 || !context.expectedSan) {
+    return null;
+  }
+
+  return (
+    <p className="mt-2 text-xs text-muted-foreground">
+      Multiple repertoire moves are available here. This line expects{" "}
+      <span className="font-mono font-medium text-foreground/90">
+        {context.expectedSan}
+      </span>
+      {alternateMoves.length > 0 ? (
+        <>
+          {" "}
+          (also in repertoire: {formatRepertoireMoveList(alternateMoves)})
+        </>
+      ) : null}
+      .
+    </p>
+  );
 }
 
 export function TrainingPanel({
@@ -24,6 +102,8 @@ export function TrainingPanel({
   isUserTurn,
   isAnimatingOpponent,
   feedback,
+  positionHint,
+  positionContext,
   phase,
   onAdvanceFeedback,
   onEndTraining,
@@ -50,6 +130,9 @@ export function TrainingPanel({
           return total > 0 ? (current / total) * 100 : 0;
         })()
       : 0;
+
+  const hasBranchingChoices =
+    (positionContext?.repertoireChoices.length ?? 0) > 1;
 
   return (
     <aside className="flex h-full min-h-0 flex-col gap-4 overflow-hidden p-4">
@@ -108,7 +191,8 @@ export function TrainingPanel({
             ) : feedback.playedSan && feedback.expectedSan ? (
               <div className="rounded-md bg-danger-muted px-3 py-2 ring-1 ring-danger/30">
                 <p className="text-sm font-semibold text-danger-foreground">
-                  You played {feedback.playedSan}, expected {feedback.expectedSan}
+                  {feedback.playedSan} is not in your repertoire here. Expected{" "}
+                  {feedback.expectedSan} for this line.
                 </p>
               </div>
             ) : (
@@ -122,6 +206,8 @@ export function TrainingPanel({
               </p>
             ) : null}
           </div>
+        ) : positionHint ? (
+          <AlternateMoveHint hint={positionHint} />
         ) : isAnimatingOpponent ? (
           <p className="text-sm text-muted-foreground">Opponent playing…</p>
         ) : isUserTurn ? (
@@ -131,6 +217,9 @@ export function TrainingPanel({
               <p className="mt-1 text-xs text-muted-foreground">
                 {userMoveProgressLabel}
               </p>
+            ) : null}
+            {hasBranchingChoices && positionContext ? (
+              <BranchingPositionNotice context={positionContext} />
             ) : null}
           </>
         ) : (
@@ -157,7 +246,8 @@ export function TrainingPanel({
       ) : null}
 
       <p className="mt-auto text-xs text-muted-foreground">
-        Wrong moves end the line immediately unless you are in test mode.
+        Valid repertoire moves from other lines are accepted with a hint. Moves
+        not in your repertoire end the line.
       </p>
     </aside>
   );
