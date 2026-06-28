@@ -128,19 +128,19 @@ export function TrainingSessionContent({
 
   if (!training.isHydrated) {
     return (
-      <div className="flex h-full items-center justify-center bg-zinc-100">
-        <p className="text-sm text-zinc-500">Loading training…</p>
+      <div className="flex h-full items-center justify-center bg-surface-muted">
+        <p className="text-sm text-muted-foreground">Loading training…</p>
       </div>
     );
   }
 
   if (!userColor || !sessionConfig) {
     return (
-      <div className="flex h-full flex-col items-center justify-center bg-zinc-100 px-4">
-        <p className="text-sm text-zinc-600">Choose a color to start training.</p>
+      <div className="flex h-full flex-col items-center justify-center bg-surface-muted px-4">
+        <p className="text-sm text-muted-foreground">Choose a color to start training.</p>
         <Link
           href={`/training/${id}`}
-          className="mt-4 rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white"
+          className="mt-4 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white"
         >
           Back to setup
         </Link>
@@ -150,11 +150,11 @@ export function TrainingSessionContent({
 
   if (training.notFound) {
     return (
-      <div className="flex h-full flex-col items-center justify-center bg-zinc-100 px-4">
-        <h1 className="text-xl font-semibold text-zinc-900">
+      <div className="flex h-full flex-col items-center justify-center bg-surface-muted px-4">
+        <h1 className="text-xl font-semibold text-foreground">
           Repertoire not found
         </h1>
-        <Link href="/training" className="mt-4 text-sm font-medium text-green-700">
+        <Link href="/training" className="mt-4 text-sm font-medium text-accent">
           Back to training
         </Link>
       </div>
@@ -163,16 +163,16 @@ export function TrainingSessionContent({
 
   if (training.noLines) {
     return (
-      <div className="flex h-full flex-col items-center justify-center bg-zinc-100 px-4">
-        <h1 className="text-xl font-semibold text-zinc-900">
+      <div className="flex h-full flex-col items-center justify-center bg-surface-muted px-4">
+        <h1 className="text-xl font-semibold text-foreground">
           No trainable lines
         </h1>
-        <p className="mt-2 text-sm text-zinc-600">
+        <p className="mt-2 text-sm text-muted-foreground">
           This repertoire has no lines for {userColor}.
         </p>
         <Link
           href={`/training/${id}`}
-          className="mt-4 rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white"
+          className="mt-4 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white"
         >
           Back to setup
         </Link>
@@ -182,7 +182,7 @@ export function TrainingSessionContent({
 
   if (training.phase === "summary" && training.summary) {
     return (
-      <div className="flex h-full min-h-0 flex-col overflow-hidden bg-zinc-100 lg:flex-row">
+      <div className="flex h-full min-h-0 flex-col overflow-hidden bg-surface-muted lg:flex-row">
         <section className="flex min-h-0 flex-1 flex-col p-3 sm:p-4">
           <TrainingBoard
             fen={training.boardFen}
@@ -193,7 +193,7 @@ export function TrainingSessionContent({
             onMove={() => false}
           />
         </section>
-        <aside className="flex h-[50dvh] min-h-0 w-full shrink-0 flex-col border-t border-zinc-200 bg-white lg:h-full lg:w-[min(100%,26rem)] lg:border-l lg:border-t-0">
+        <aside className="flex h-[50dvh] min-h-0 w-full shrink-0 flex-col border-t border-border bg-surface lg:h-full lg:w-[min(100%,26rem)] lg:border-l lg:border-t-0">
           <TrainingSummary summary={training.summary} repertoireId={id} />
         </aside>
       </div>
@@ -201,14 +201,14 @@ export function TrainingSessionContent({
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-zinc-100 lg:flex-row">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-surface-muted lg:flex-row">
       <section className="flex min-h-0 min-w-0 flex-[1.2] flex-col p-3 sm:p-4 lg:flex-1">
         <header className="mb-3 flex shrink-0 items-center justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="truncate text-lg font-semibold text-zinc-900">
+            <h1 className="truncate text-lg font-semibold text-foreground">
               {training.repertoireName}
             </h1>
-            <p className="text-xs text-zinc-600">{training.lineProgressLabel}</p>
+            <p className="text-xs text-muted-foreground">{training.lineProgressLabel}</p>
           </div>
         </header>
         <TrainingBoard
@@ -221,7 +221,7 @@ export function TrainingSessionContent({
         />
       </section>
 
-      <aside className="flex h-[42dvh] min-h-0 w-full min-w-0 shrink-0 flex-col border-t border-zinc-200 bg-white lg:h-full lg:w-[min(100%,26rem)] lg:max-w-md lg:border-l lg:border-t-0">
+      <aside className="flex h-[42dvh] min-h-0 w-full min-w-0 shrink-0 flex-col border-t border-border bg-surface lg:h-full lg:w-[min(100%,26rem)] lg:max-w-md lg:border-l lg:border-t-0">
         <TrainingPanel
           lineProgressLabel={training.lineProgressLabel}
           userMoveProgressLabel={training.userMoveProgressLabel}

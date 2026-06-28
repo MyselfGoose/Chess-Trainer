@@ -41,12 +41,12 @@ export function PgnStudyToolsPanel({
   return (
     <aside className="flex h-full min-h-0 w-full flex-col gap-3 overflow-y-auto overflow-x-hidden p-3 lg:p-4">
       <div className="flex min-w-0 items-center justify-between gap-2">
-        <h2 className="truncate text-base font-semibold text-zinc-900 lg:text-lg">
+        <h2 className="truncate text-base font-semibold text-foreground lg:text-lg">
           {repertoireName ?? "Repertoire"}
         </h2>
         <a
           href="/repertoires"
-          className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-green-700 transition hover:bg-green-50"
+          className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-accent transition hover:bg-accent-muted"
         >
           Library
         </a>
@@ -69,17 +69,17 @@ export function PgnStudyToolsPanel({
       />
 
       {preparationGaps.length > 0 && onNavigateToGap ? (
-        <details className="shrink-0 rounded-lg ring-1 ring-zinc-200">
-          <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-zinc-700">
+        <details className="shrink-0 rounded-lg ring-1 ring-border">
+          <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-foreground/90">
             Preparation gaps ({preparationGaps.length})
           </summary>
-          <ul className="max-h-36 space-y-1 overflow-y-auto border-t border-zinc-100 px-2 py-2">
+          <ul className="max-h-36 space-y-1 overflow-y-auto border-t border-border/70 px-2 py-2">
             {preparationGaps.map((gap) => (
               <li key={gap.leafNodeId}>
                 <button
                   type="button"
                   onClick={() => onNavigateToGap(gap.leafNodeId)}
-                  className="w-full rounded-md px-2 py-1.5 text-left text-xs text-zinc-700 hover:bg-zinc-50"
+                  className="w-full rounded-md px-2 py-1.5 text-left text-xs text-foreground/90 hover:bg-background"
                 >
                   <span className="font-mono">{gap.label}</span>
                 </button>
@@ -89,11 +89,11 @@ export function PgnStudyToolsPanel({
         </details>
       ) : null}
 
-      <details className="shrink-0 rounded-lg ring-1 ring-zinc-200">
-        <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-zinc-700">
+      <details className="shrink-0 rounded-lg ring-1 ring-border">
+        <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-foreground/90">
           Game info & stats
         </summary>
-        <div className="flex flex-col gap-3 border-t border-zinc-100 px-3 pb-3 pt-2">
+        <div className="flex flex-col gap-3 border-t border-border/70 px-3 pb-3 pt-2">
           <PgnHeadersCard game={currentGame} compact />
           <PgnLineStats stats={lineStats} />
         </div>

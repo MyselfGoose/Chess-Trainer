@@ -117,18 +117,18 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
   }, [repertoire]);
 
   if (!isHydrated) {
-    return <p className="text-sm text-zinc-500">Loading…</p>;
+    return <p className="text-sm text-muted-foreground">Loading…</p>;
   }
 
   if (!repertoire) {
     return (
-      <div className="rounded-xl bg-white p-8 text-center ring-1 ring-zinc-200">
-        <h2 className="text-xl font-semibold text-zinc-900">
+      <div className="rounded-xl bg-surface p-8 text-center ring-1 ring-border">
+        <h2 className="text-xl font-semibold text-foreground">
           Repertoire not found
         </h2>
         <Link
           href="/training"
-          className="mt-4 inline-block text-sm font-medium text-green-700"
+          className="mt-4 inline-block text-sm font-medium text-accent"
         >
           Back to training
         </Link>
@@ -173,27 +173,27 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
 
   return (
     <div className="mx-auto max-w-lg">
-      <div className="rounded-xl bg-white p-6 ring-1 ring-zinc-200">
-        <h2 className="text-2xl font-bold text-zinc-900">{repertoire.name}</h2>
-        <p className="mt-1 text-sm text-zinc-600">
+      <div className="rounded-xl bg-surface p-6 ring-1 ring-border">
+        <h2 className="text-2xl font-bold text-foreground">{repertoire.name}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
           {totalLines} lines · max depth {aggregateStats.maxDepth}
         </p>
 
         {anchorParam ? (
-          <p className="mt-2 text-sm text-green-700">
+          <p className="mt-2 text-sm text-accent">
             {anchorFilteredLines.length} lines from this position
           </p>
         ) : null}
 
         {!hasRegisteredLines ? (
-          <div className="mt-6 rounded-lg bg-amber-50 p-4 ring-1 ring-amber-200">
-            <p className="text-sm text-amber-900">
+          <div className="mt-6 rounded-lg bg-warning-muted p-4 ring-1 ring-warning/30">
+            <p className="text-sm text-warning-foreground">
               This repertoire has no registered lines yet. Build and register
               lines before training.
             </p>
             <Link
               href={`/repertoires/${repertoire.id}/edit`}
-              className="mt-3 inline-block text-sm font-semibold text-amber-800 underline"
+              className="mt-3 inline-block text-sm font-semibold text-warning-foreground underline"
             >
               Edit repertoire
             </Link>
@@ -201,12 +201,12 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
         ) : (
           <>
             <div className="mt-6">
-              <p className="mb-3 text-sm font-medium text-zinc-700">Your color</p>
+              <p className="mb-3 text-sm font-medium text-foreground/90">Your color</p>
               <TrainingColorPicker value={userColor} onChange={setUserColor} />
             </div>
 
             <div className="mt-6">
-              <p className="mb-3 text-sm font-medium text-zinc-700">Mode</p>
+              <p className="mb-3 text-sm font-medium text-foreground/90">Mode</p>
               <div className="grid grid-cols-2 gap-2">
                 {(
                   [
@@ -222,8 +222,8 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
                     onClick={() => setMode(value)}
                     className={`rounded-lg px-3 py-2 text-left text-xs font-medium ring-1 ${
                       mode === value
-                        ? "bg-green-50 text-green-800 ring-green-300"
-                        : "bg-white text-zinc-700 ring-zinc-200 hover:bg-zinc-50"
+                        ? "bg-accent-muted text-accent-foreground ring-accent/40"
+                        : "bg-surface text-foreground/90 ring-border hover:bg-background"
                     }`}
                   >
                     {label}
@@ -233,7 +233,7 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
             </div>
 
             <div className="mt-6">
-              <p className="mb-3 text-sm font-medium text-zinc-700">
+              <p className="mb-3 text-sm font-medium text-foreground/90">
                 Lines this session
               </p>
               <div className="flex flex-wrap gap-2">
@@ -244,8 +244,8 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
                     onClick={() => setMaxLines(size)}
                     className={`rounded-md px-3 py-1.5 text-sm font-medium ring-1 ${
                       maxLines === size
-                        ? "bg-green-700 text-white ring-green-700"
-                        : "bg-white text-zinc-700 ring-zinc-200"
+                        ? "bg-accent text-white ring-accent"
+                        : "bg-surface text-foreground/90 ring-border"
                     }`}
                   >
                     {size === 0 ? "All" : size}
@@ -261,7 +261,7 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
                 setLinesExpanded((event.target as HTMLDetailsElement).open)
               }
             >
-              <summary className="cursor-pointer text-sm font-medium text-zinc-700">
+              <summary className="cursor-pointer text-sm font-medium text-foreground/90">
                 Lines to train ({selectedLineIds.size} selected)
               </summary>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -272,14 +272,14 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
                       new Set(anchorFilteredLines.map((line) => line.id)),
                     )
                   }
-                  className="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700"
+                  className="rounded-md bg-surface-muted px-2 py-1 text-xs font-medium text-foreground/90"
                 >
                   Select all
                 </button>
                 <button
                   type="button"
                   onClick={() => setSelectedLineIds(new Set())}
-                  className="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700"
+                  className="rounded-md bg-surface-muted px-2 py-1 text-xs font-medium text-foreground/90"
                 >
                   Clear
                 </button>
@@ -287,7 +287,7 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
                   type="button"
                   disabled={weakLineIds.size === 0}
                   onClick={() => setSelectedLineIds(new Set(weakLineIds))}
-                  className="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700 disabled:opacity-40"
+                  className="rounded-md bg-surface-muted px-2 py-1 text-xs font-medium text-foreground/90 disabled:opacity-40"
                 >
                   Failed / weak only
                 </button>
@@ -295,7 +295,7 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
               <ul className="mt-3 max-h-48 space-y-1 overflow-y-auto">
                 {pagedLines.map((line) => (
                   <li key={line.id}>
-                    <label className="flex min-h-11 cursor-pointer items-start gap-2 rounded-md px-2 py-2 hover:bg-zinc-50">
+                    <label className="flex min-h-11 cursor-pointer items-start gap-2 rounded-md px-2 py-2 hover:bg-background">
                       <input
                         type="checkbox"
                         checked={selectedLineIds.has(line.id)}
@@ -312,7 +312,7 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
                         }}
                         className="mt-1"
                       />
-                      <span className="font-mono text-xs text-zinc-700">
+                      <span className="font-mono text-xs text-foreground/90">
                         {line.label}
                       </span>
                     </label>
@@ -320,7 +320,7 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
                 ))}
               </ul>
               {totalPages > 1 ? (
-                <div className="mt-2 flex items-center justify-between text-xs text-zinc-500">
+                <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
                   <button
                     type="button"
                     disabled={page === 0}
@@ -347,7 +347,7 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
             <CoverageMap lines={anchorFilteredLines} repertoireId={repertoireId} />
 
             <div className="mt-6 space-y-2">
-              <label className="flex items-center gap-2 text-sm text-zinc-700">
+              <label className="flex items-center gap-2 text-sm text-foreground/90">
                 <input
                   type="checkbox"
                   checked={showComments}
@@ -355,7 +355,7 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
                 />
                 Show comment after each line
               </label>
-              <label className="flex items-center gap-2 text-sm text-zinc-700">
+              <label className="flex items-center gap-2 text-sm text-foreground/90">
                 <input
                   type="checkbox"
                   checked={soundEnabled}
@@ -366,7 +366,7 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
             </div>
 
             <div className="mt-4">
-              <p className="mb-2 text-sm font-medium text-zinc-700">
+              <p className="mb-2 text-sm font-medium text-foreground/90">
                 Opponent branches
               </p>
               <select
@@ -374,7 +374,7 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
                 onChange={(event) =>
                   setOpponentPolicy(event.target.value as OpponentPolicy)
                 }
-                className="w-full rounded-md border border-zinc-200 px-3 py-2 text-sm"
+                className="w-full rounded-md border border-border px-3 py-2 text-sm"
               >
                 <option value="mainline">Main line first</option>
                 <option value="random">Random</option>
@@ -386,7 +386,7 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
               type="button"
               disabled={selectedLines.length === 0}
               onClick={startTraining}
-              className="mt-6 w-full rounded-lg bg-green-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-green-800 disabled:opacity-50"
+              className="mt-6 w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-hover disabled:opacity-50"
             >
               Start training ({applySessionLineLimit(selectedLines, maxLines, false).length}{" "}
               lines)

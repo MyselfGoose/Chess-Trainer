@@ -9,11 +9,11 @@ interface CoverageMapProps {
 }
 
 const LEVEL_COLORS: Record<string, string> = {
-  mastered: "bg-green-500",
-  review: "bg-yellow-400",
-  learning: "bg-yellow-300",
-  new: "bg-zinc-300",
-  untrained: "bg-zinc-200",
+  mastered: "bg-accent",
+  review: "bg-warning",
+  learning: "bg-warning/70",
+  new: "bg-border-strong",
+  untrained: "bg-border",
 };
 
 function levelForLine(lineId: string, repertoireId: string): string {
@@ -34,7 +34,7 @@ export function CoverageMap({ lines, repertoireId }: CoverageMapProps) {
 
   return (
     <div className="mt-4">
-      <h3 className="text-sm font-medium text-zinc-700">Coverage map</h3>
+      <h3 className="text-sm font-medium text-foreground/90">Coverage map</h3>
       <div className="mt-2 grid grid-cols-4 gap-1 sm:grid-cols-6">
         {lines.map((line) => {
           const level = levelForLine(line.id, repertoireId);
@@ -47,7 +47,7 @@ export function CoverageMap({ lines, repertoireId }: CoverageMapProps) {
           );
         })}
       </div>
-      <ul className="mt-2 flex flex-wrap gap-3 text-xs text-zinc-600">
+      <ul className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
         <li className="flex items-center gap-1">
           <span className={`inline-block h-3 w-3 rounded ${LEVEL_COLORS.mastered}`} />
           Mastered

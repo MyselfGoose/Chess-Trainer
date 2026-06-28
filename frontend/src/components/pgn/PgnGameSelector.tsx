@@ -19,14 +19,14 @@ export function PgnGameSelector({
 
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <label htmlFor="pgn-game-select" className="text-xs font-medium text-zinc-500">
+      <label htmlFor="pgn-game-select" className="text-xs font-medium text-muted-foreground">
         Game ({games.length} total)
       </label>
       <select
         id="pgn-game-select"
         value={selectedIndex}
         onChange={(event) => onSelect(Number(event.target.value))}
-        className="w-full min-w-0 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 focus:border-green-600 focus:outline-none focus:ring-1 focus:ring-green-600"
+        className="w-full min-w-0 rounded-md border border-border-strong bg-surface px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
       >
         {games.map((game, index) => {
           const label = [

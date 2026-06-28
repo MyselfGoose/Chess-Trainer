@@ -38,7 +38,7 @@ function FlipBoardButton({
     <button
       type="button"
       onClick={onFlip}
-      className="shrink-0 rounded-md bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 ring-1 ring-zinc-200 transition hover:bg-zinc-50"
+      className="shrink-0 rounded-md bg-surface px-3 py-1.5 text-sm font-medium text-foreground/90 ring-1 ring-border transition hover:bg-background"
     >
       Flip ({orientation === "white" ? "White" : "Black"} below)
     </button>
@@ -48,7 +48,7 @@ function FlipBoardButton({
 function BoardFrame({ children }: { children: ReactNode }) {
   return (
     <div className="board-fit-container mx-auto w-full max-w-[min(100%,720px)]">
-      <div className="board-fit-square rounded-sm p-1 shadow-lg ring-1 ring-black/10">
+      <div className="board-fit-square rounded-sm p-1 shadow-lg ring-1 ring-border">
         {children}
       </div>
     </div>
@@ -135,22 +135,22 @@ export default function StudyPage({
 
   if (!study.isHydrated) {
     return (
-      <div className="flex h-full min-h-0 items-center justify-center bg-zinc-100">
-        <p className="text-sm text-zinc-500">Loading study…</p>
+      <div className="flex h-full min-h-0 items-center justify-center bg-surface-muted">
+        <p className="text-sm text-muted-foreground">Loading study…</p>
       </div>
     );
   }
 
   if (!study.hasStudy || !study.repertoire || !study.currentGame || !study.lineStats) {
     return (
-      <div className="flex min-h-[50vh] flex-col items-center justify-center bg-zinc-100 px-4">
+      <div className="flex min-h-[50vh] flex-col items-center justify-center bg-surface-muted px-4">
         <EmptyState
           title="Repertoire not found"
           description="This repertoire may have been deleted or is invalid."
           actions={
             <Link
               href="/repertoires"
-              className="rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white"
+              className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white"
             >
               Back to library
             </Link>
@@ -161,9 +161,9 @@ export default function StudyPage({
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-zinc-100 lg:grid lg:grid-cols-[minmax(13rem,17rem)_minmax(0,1fr)_minmax(16rem,22rem)]">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-surface-muted lg:grid lg:grid-cols-[minmax(13rem,17rem)_minmax(0,1fr)_minmax(16rem,22rem)]">
       {/* Left: navigation & tools */}
-      <div className="order-2 hidden min-h-0 border-r border-zinc-200 bg-white lg:order-1 lg:block">
+      <div className="order-2 hidden min-h-0 border-r border-border bg-surface lg:order-1 lg:block">
         <PgnStudyToolsPanel
           games={study.repertoire.games}
           selectedGameIndex={study.selectedGameIndex}
@@ -181,11 +181,11 @@ export default function StudyPage({
       </div>
 
       {/* Mobile: collapsible tools */}
-      <details className="order-2 border-b border-zinc-200 bg-white lg:hidden">
-        <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-zinc-700">
+      <details className="order-2 border-b border-border bg-surface lg:hidden">
+        <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-foreground/90">
           Search, gaps & game info
         </summary>
-        <div className="max-h-[40dvh] overflow-y-auto border-t border-zinc-100">
+        <div className="max-h-[40dvh] overflow-y-auto border-t border-border/70">
           <PgnStudyToolsPanel
             games={study.repertoire.games}
             selectedGameIndex={study.selectedGameIndex}
@@ -207,7 +207,7 @@ export default function StudyPage({
       <section className="order-1 flex min-h-0 min-w-0 flex-col p-3 sm:p-4 lg:order-2">
         <header className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-3">
           <div className="min-w-0 lg:hidden">
-            <h1 className="truncate text-lg font-semibold text-zinc-900">
+            <h1 className="truncate text-lg font-semibold text-foreground">
               {study.repertoire.name}
             </h1>
           </div>
@@ -216,7 +216,7 @@ export default function StudyPage({
             {trainFromHereHref ? (
               <Link
                 href={trainFromHereHref}
-                className="rounded-md bg-green-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-800"
+                className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white hover:bg-accent-hover"
               >
                 Train from here
               </Link>
@@ -225,7 +225,7 @@ export default function StudyPage({
         </header>
 
         {transpositionLabels.length > 0 ? (
-          <div className="mb-3 rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-900 ring-1 ring-blue-200">
+          <div className="mb-3 rounded-lg bg-info-muted px-3 py-2 text-sm text-info-foreground ring-1 ring-info/30">
             Also reached via: {transpositionLabels.join(" · ")}
           </div>
         ) : null}
@@ -259,7 +259,7 @@ export default function StudyPage({
       </section>
 
       {/* Right: comments & move choices */}
-      <div className="order-3 flex min-h-0 border-t border-zinc-200 bg-white lg:h-full lg:max-h-none lg:border-l lg:border-t-0">
+      <div className="order-3 flex min-h-0 border-t border-border bg-surface lg:h-full lg:max-h-none lg:border-l lg:border-t-0">
         <div className="flex h-[min(52dvh,100%)] min-h-0 w-full lg:h-full lg:max-h-none">
           <PgnStudyMovesPanel
             currentGame={study.currentGame}

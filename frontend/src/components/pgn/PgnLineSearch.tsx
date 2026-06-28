@@ -85,13 +85,13 @@ export function PgnLineSearch({ game, onSelect }: PgnLineSearchProps) {
         }}
         onFocus={() => setIsOpen(true)}
         onKeyDown={handleKeyDown}
-        className="w-full rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-green-600 focus:outline-none focus:ring-1 focus:ring-green-600"
+        className="w-full rounded-md border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/80 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
       />
       {isOpen && results.length > 0 ? (
         <ul
           id="line-search-results"
           role="listbox"
-          className="absolute z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-zinc-200"
+          className="absolute z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-md bg-surface py-1 shadow-lg ring-1 ring-border"
         >
           {results.map((result, index) => (
             <li key={result.leafNodeId} role="option" aria-selected={index === safeHighlightIndex}>
@@ -101,8 +101,8 @@ export function PgnLineSearch({ game, onSelect }: PgnLineSearchProps) {
                 onClick={() => selectResult(result.leafNodeId)}
                 className={`block w-full px-3 py-2 text-left text-sm ${
                   index === safeHighlightIndex
-                    ? "bg-green-50 text-green-900"
-                    : "text-zinc-700 hover:bg-zinc-50"
+                    ? "bg-accent-muted text-accent-foreground"
+                    : "text-foreground/90 hover:bg-background"
                 }`}
               >
                 {result.label}

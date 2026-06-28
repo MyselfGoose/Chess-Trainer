@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import { ClientProviders } from "@/components/layout/ClientProviders";
 import { Navbar } from "@/components/layout/Navbar";
+import { ThemeScript } from "@/components/theme/ThemeScript";
 
 import "./globals.css";
 
@@ -31,13 +32,18 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
-      <body className="flex h-dvh flex-col overflow-hidden">
-        <Navbar />
-        <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          {children}
-        </main>
-        <ClientProviders />
+      <head>
+        <ThemeScript />
+      </head>
+      <body className="flex h-dvh flex-col overflow-hidden bg-background text-foreground">
+        <ClientProviders>
+          <Navbar />
+          <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            {children}
+          </main>
+        </ClientProviders>
       </body>
     </html>
   );

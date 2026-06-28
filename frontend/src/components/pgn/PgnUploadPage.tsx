@@ -30,11 +30,11 @@ export function PgnUploadPage() {
   );
 
   return (
-    <div className="min-h-full overflow-y-auto bg-zinc-100">
+    <div className="min-h-full overflow-y-auto bg-surface-muted">
       <div className="mx-auto max-w-2xl px-4 py-12">
         <header className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-zinc-900">Import a PGN</h1>
-          <p className="mt-2 text-zinc-600">
+          <h1 className="text-3xl font-bold text-foreground">Import a PGN</h1>
+          <p className="mt-2 text-muted-foreground">
             Upload or paste a PGN file — it is saved to your library automatically
             using the file name.
           </p>

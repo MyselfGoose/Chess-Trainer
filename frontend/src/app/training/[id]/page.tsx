@@ -13,10 +13,10 @@ export default function TrainingSetupPage({
   const { id } = use(params);
 
   return (
-    <div className="min-h-full overflow-y-auto bg-zinc-100 px-4 py-10">
+    <div className="min-h-full overflow-y-auto bg-surface-muted px-4 py-10">
       <Link
         href="/training"
-        className="mb-6 inline-block text-sm font-medium text-green-700"
+        className="mb-6 inline-block text-sm font-medium text-accent"
       >
         ← Back to training
       </Link>

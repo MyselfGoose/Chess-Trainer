@@ -65,31 +65,31 @@ export function LegacyMigrationBanner({ onMigrated }: LegacyMigrationBannerProps
   }
 
   return (
-    <div className="rounded-xl bg-amber-50 p-4 ring-1 ring-amber-200">
-      <p className="text-sm font-medium text-amber-900">
+    <div className="rounded-xl bg-warning-muted p-4 ring-1 ring-warning/30">
+      <p className="text-sm font-medium text-warning-foreground">
         You have an unsaved study session from the previous version.
       </p>
       <label className="mt-3 block">
-        <span className="text-xs font-medium text-amber-800">Save as</span>
+        <span className="text-xs font-medium text-warning-foreground">Save as</span>
         <input
           type="text"
           value={name}
           onChange={(event) => setName(event.target.value)}
-          className="mt-1 w-full rounded-md border border-amber-200 bg-white px-3 py-1.5 text-sm"
+          className="mt-1 w-full rounded-md border border-amber-200 bg-surface px-3 py-1.5 text-sm"
         />
       </label>
       <div className="mt-3 flex flex-wrap gap-2">
         <button
           type="button"
           onClick={importLegacy}
-          className="rounded-md bg-amber-700 px-3 py-1.5 text-xs font-semibold text-white"
+          className="rounded-md bg-warning px-3 py-1.5 text-xs font-semibold text-white"
         >
           Add to library
         </button>
         <button
           type="button"
           onClick={dismiss}
-          className="rounded-md px-3 py-1.5 text-xs text-amber-800"
+          className="rounded-md px-3 py-1.5 text-xs text-warning-foreground"
         >
           Dismiss
         </button>

@@ -94,7 +94,7 @@ export function RepertoireCard({ repertoire, onRefresh }: RepertoireCardProps) {
   }, [repertoire.games, repertoire.name]);
 
   return (
-    <article className="rounded-xl bg-white p-5 ring-1 ring-zinc-200">
+    <article className="rounded-xl bg-surface p-5 ring-1 ring-border">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           {showRename ? (
@@ -118,14 +118,14 @@ export function RepertoireCard({ repertoire, onRefresh }: RepertoireCardProps) {
                     }
                   }}
                   maxLength={REPERTOIRE_NAME_MAX_LENGTH}
-                  className="min-w-0 flex-1 rounded-md border border-zinc-300 px-2 py-1 text-sm"
+                  className="min-w-0 flex-1 rounded-md border border-border-strong px-2 py-1 text-sm"
                   autoFocus
                   aria-label="Repertoire name"
                 />
                 <button
                   type="button"
                   onClick={handleRename}
-                  className="rounded-md bg-green-700 px-2 py-1 text-xs font-medium text-white"
+                  className="rounded-md bg-accent px-2 py-1 text-xs font-medium text-white"
                 >
                   Save
                 </button>
@@ -136,13 +136,13 @@ export function RepertoireCard({ repertoire, onRefresh }: RepertoireCardProps) {
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <h3 className="truncate text-lg font-semibold text-zinc-900">
+              <h3 className="truncate text-lg font-semibold text-foreground">
                 {repertoire.name}
               </h3>
               <button
                 type="button"
                 onClick={() => setShowRename(true)}
-                className="shrink-0 rounded-md p-1 text-zinc-500 hover:bg-zinc-100"
+                className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-surface-muted"
                 aria-label="Rename repertoire"
               >
                 ✎
@@ -153,19 +153,19 @@ export function RepertoireCard({ repertoire, onRefresh }: RepertoireCardProps) {
             <span
               className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                 repertoire.source === "imported"
-                  ? "bg-blue-50 text-blue-700"
+                  ? "bg-info-muted text-blue-700"
                   : "bg-purple-50 text-purple-700"
               }`}
             >
               {repertoire.source === "imported" ? "Imported" : "Created"}
             </span>
-            <span className="text-xs text-zinc-500">
+            <span className="text-xs text-muted-foreground">
               Updated {formatDate(repertoire.updatedAt)}
             </span>
             {weakLines.length > 0 ? (
               <Link
                 href={`/training/${repertoire.id}?weak=${weakLines.map((line) => line.lineId).join(",")}`}
-                className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700"
+                className="rounded-full bg-danger-muted px-2 py-0.5 text-xs font-medium text-danger"
               >
                 {weakLines.length} weak lines
               </Link>
@@ -175,24 +175,24 @@ export function RepertoireCard({ repertoire, onRefresh }: RepertoireCardProps) {
       </div>
 
       <dl className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
-        <div className="rounded-lg bg-zinc-50 px-2 py-2">
-          <dt className="text-zinc-500">Lines</dt>
-          <dd className="font-semibold text-zinc-900">{stats.lineCount}</dd>
+        <div className="rounded-lg bg-background px-2 py-2">
+          <dt className="text-muted-foreground">Lines</dt>
+          <dd className="font-semibold text-foreground">{stats.lineCount}</dd>
         </div>
-        <div className="rounded-lg bg-zinc-50 px-2 py-2">
-          <dt className="text-zinc-500">Moves</dt>
-          <dd className="font-semibold text-zinc-900">{stats.totalMoves}</dd>
+        <div className="rounded-lg bg-background px-2 py-2">
+          <dt className="text-muted-foreground">Moves</dt>
+          <dd className="font-semibold text-foreground">{stats.totalMoves}</dd>
         </div>
-        <div className="rounded-lg bg-zinc-50 px-2 py-2">
-          <dt className="text-zinc-500">Variations</dt>
-          <dd className="font-semibold text-zinc-900">{stats.variationCount}</dd>
+        <div className="rounded-lg bg-background px-2 py-2">
+          <dt className="text-muted-foreground">Variations</dt>
+          <dd className="font-semibold text-foreground">{stats.variationCount}</dd>
         </div>
       </dl>
 
       <div className="mt-4 flex flex-wrap gap-2">
         <Link
           href={`/study/${repertoire.id}`}
-          className="rounded-lg bg-green-700 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-green-800"
+          className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-accent-hover"
         >
           Study
         </Link>
@@ -200,7 +200,7 @@ export function RepertoireCard({ repertoire, onRefresh }: RepertoireCardProps) {
           <button
             type="button"
             onClick={() => router.push(`/repertoires/${repertoire.id}/edit`)}
-            className="rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 ring-1 ring-zinc-200 transition hover:bg-zinc-50"
+            className="rounded-lg bg-surface px-3 py-1.5 text-sm font-medium text-foreground/90 ring-1 ring-border transition hover:bg-background"
           >
             Edit
           </button>
@@ -211,29 +211,29 @@ export function RepertoireCard({ repertoire, onRefresh }: RepertoireCardProps) {
             setShowRename(true);
             setRenameError(null);
           }}
-          className="rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-600 transition hover:bg-zinc-50"
+          className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground transition hover:bg-background"
         >
           Rename
         </button>
         <button
           type="button"
           onClick={handleExport}
-          className="rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-600 transition hover:bg-zinc-50"
+          className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground transition hover:bg-background"
         >
           Export
         </button>
         <button
           type="button"
           onClick={() => setShowDelete(true)}
-          className="rounded-lg px-3 py-1.5 text-sm font-medium text-red-600 transition hover:bg-red-50"
+          className="rounded-lg px-3 py-1.5 text-sm font-medium text-red-600 transition hover:bg-danger-muted"
         >
           Delete
         </button>
       </div>
 
       {showDelete ? (
-        <div className="mt-4 rounded-lg bg-red-50 p-3 ring-1 ring-red-200">
-          <p className="text-sm text-red-800">
+        <div className="mt-4 rounded-lg bg-danger-muted p-3 ring-1 ring-danger/30">
+          <p className="text-sm text-danger-foreground">
             Delete &ldquo;{repertoire.name}&rdquo;? This cannot be undone.
           </p>
           <div className="mt-2 flex gap-2">
@@ -247,7 +247,7 @@ export function RepertoireCard({ repertoire, onRefresh }: RepertoireCardProps) {
             <button
               type="button"
               onClick={() => setShowDelete(false)}
-              className="rounded-md px-3 py-1 text-xs text-zinc-600"
+              className="rounded-md px-3 py-1 text-xs text-muted-foreground"
             >
               Cancel
             </button>

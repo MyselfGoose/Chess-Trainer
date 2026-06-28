@@ -46,7 +46,7 @@ function FlipBoardButton({
     <button
       type="button"
       onClick={onFlip}
-      className="shrink-0 rounded-md bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 ring-1 ring-zinc-200 transition hover:bg-zinc-50"
+      className="shrink-0 rounded-md bg-surface px-3 py-1.5 text-sm font-medium text-foreground/90 ring-1 ring-border transition hover:bg-background"
     >
       Flip ({orientation === "white" ? "White" : "Black"} below)
     </button>
@@ -56,7 +56,7 @@ function FlipBoardButton({
 function BoardFrame({ children }: { children: ReactNode }) {
   return (
     <div className="board-fit-container">
-      <div className="board-fit-square rounded-sm p-1 shadow-lg ring-1 ring-black/10">
+      <div className="board-fit-square rounded-sm p-1 shadow-lg ring-1 ring-border">
         {children}
       </div>
     </div>
@@ -75,9 +75,9 @@ function PlayControls({
   resultMessage: string | null;
 }) {
   return (
-    <div className="flex w-full max-w-lg shrink-0 flex-col gap-2 rounded-lg bg-white p-3 shadow-sm ring-1 ring-zinc-200">
+    <div className="flex w-full max-w-lg shrink-0 flex-col gap-2 rounded-lg bg-surface p-3 shadow-sm ring-1 ring-border">
       <div className="flex items-center justify-between gap-4">
-        <p className="text-sm text-zinc-700">
+        <p className="text-sm text-foreground/90">
           <span className="font-medium">Turn:</span> {turnLabel}
           {inCheck ? (
             <span className="ml-2 font-medium text-red-600">Check</span>
@@ -86,13 +86,13 @@ function PlayControls({
         <button
           type="button"
           onClick={onReset}
-          className="shrink-0 rounded-md bg-green-700 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-green-800"
+          className="shrink-0 rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white transition hover:bg-accent-hover"
         >
           New Game
         </button>
       </div>
       {resultMessage ? (
-        <p className="rounded-md bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900 ring-1 ring-amber-200">
+        <p className="rounded-md bg-warning-muted px-3 py-2 text-sm font-medium text-warning-foreground ring-1 ring-warning/30">
           {resultMessage}
         </p>
       ) : null}
@@ -120,14 +120,14 @@ export default function BoardPage() {
   const turnLabel = play.snapshot.turn === "white" ? "White" : "Black";
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-zinc-100 lg:flex-row">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-surface-muted lg:flex-row">
       <section className="flex min-h-0 min-w-0 flex-1 flex-col p-3 sm:p-4">
         <header className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="text-lg font-semibold text-zinc-900 sm:text-xl">
+            <h1 className="text-lg font-semibold text-foreground sm:text-xl">
               Chess Board
             </h1>
-            <p className="text-xs text-zinc-600 sm:text-sm">
+            <p className="text-xs text-muted-foreground sm:text-sm">
               Click or drag pieces to play a free game
             </p>
           </div>
@@ -166,7 +166,7 @@ export default function BoardPage() {
         </div>
       </section>
 
-      <aside className="hidden min-h-0 w-full min-w-0 flex-col justify-center border-l border-zinc-200 bg-white p-4 lg:flex lg:w-80 lg:shrink-0">
+      <aside className="hidden min-h-0 w-full min-w-0 flex-col justify-center border-l border-border bg-surface p-4 lg:flex lg:w-80 lg:shrink-0">
         <PlayControls
           turnLabel={turnLabel}
           inCheck={play.snapshot.inCheck}

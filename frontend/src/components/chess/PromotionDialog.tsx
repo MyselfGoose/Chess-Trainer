@@ -26,13 +26,13 @@ export function PromotionDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-overlay"
       role="dialog"
       aria-modal="true"
       aria-label="Choose promotion piece"
     >
-      <div className="rounded-lg bg-white p-4 shadow-xl">
-        <p className="mb-3 text-center text-sm font-medium text-zinc-800">
+      <div className="rounded-lg bg-surface p-4 shadow-xl">
+        <p className="mb-3 text-center text-sm font-medium text-foreground">
           Promote pawn to:
         </p>
         <div className="flex gap-2">
@@ -41,7 +41,7 @@ export function PromotionDialog({
               key={piece}
               type="button"
               onClick={() => onSelect(piece)}
-              className="flex h-16 w-16 flex-col items-center justify-center rounded-md border border-zinc-200 bg-zinc-50 transition hover:border-green-600 hover:bg-green-50"
+              className="flex h-16 w-16 flex-col items-center justify-center rounded-md border border-border bg-background transition hover:border-accent hover:bg-accent-muted"
               aria-label={`Promote to ${label}`}
             >
               <span
@@ -51,14 +51,14 @@ export function PromotionDialog({
                 }}
                 aria-hidden="true"
               />
-              <span className="mt-1 text-xs text-zinc-600">{label}</span>
+              <span className="mt-1 text-xs text-muted-foreground">{label}</span>
             </button>
           ))}
         </div>
         <button
           type="button"
           onClick={onCancel}
-          className="mt-3 w-full rounded-md px-3 py-2 text-sm text-zinc-600 transition hover:bg-zinc-100"
+          className="mt-3 w-full rounded-md px-3 py-2 text-sm text-muted-foreground transition hover:bg-surface-muted"
         >
           Cancel
         </button>

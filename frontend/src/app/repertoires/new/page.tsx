@@ -13,9 +13,9 @@ export default function NewRepertoirePage() {
 
   if (!started) {
     return (
-      <div className="flex min-h-[calc(100dvh-3.5rem)] items-center justify-center bg-zinc-100 px-4">
+      <div className="flex min-h-[calc(100dvh-3.5rem)] items-center justify-center bg-surface-muted px-4">
         <form
-          className="w-full max-w-md rounded-xl bg-white p-8 ring-1 ring-zinc-200"
+          className="w-full max-w-md rounded-xl bg-surface p-8 ring-1 ring-border"
           onSubmit={(event) => {
             event.preventDefault();
             if (name.trim()) {
@@ -23,21 +23,21 @@ export default function NewRepertoirePage() {
             }
           }}
         >
-          <h1 className="text-2xl font-bold text-zinc-900">
+          <h1 className="text-2xl font-bold text-foreground">
             Create a repertoire
           </h1>
-          <p className="mt-2 text-sm text-zinc-600">
+          <p className="mt-2 text-sm text-muted-foreground">
             Give your repertoire a name to get started. You can change it later.
           </p>
           <label className="mt-6 block">
-            <span className="text-sm font-medium text-zinc-700">Name</span>
+            <span className="text-sm font-medium text-foreground/90">Name</span>
             <input
               type="text"
               value={name}
               onChange={(event) => setName(event.target.value)}
               maxLength={REPERTOIRE_NAME_MAX_LENGTH}
               placeholder="e.g. Sicilian Defense"
-              className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-green-600 focus:outline-none focus:ring-1 focus:ring-green-600"
+              className="mt-1 w-full rounded-lg border border-border-strong px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
               autoFocus
               required
             />
@@ -46,14 +46,14 @@ export default function NewRepertoirePage() {
             <button
               type="submit"
               disabled={!name.trim()}
-              className="flex-1 rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-800 disabled:opacity-50"
+              className="flex-1 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:bg-accent-hover disabled:opacity-50"
             >
               Start building
             </button>
             <button
               type="button"
               onClick={() => router.push("/repertoires")}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-zinc-600 transition hover:bg-zinc-50"
+              className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground transition hover:bg-background"
             >
               Cancel
             </button>

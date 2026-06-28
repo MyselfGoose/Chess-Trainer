@@ -6,7 +6,7 @@ interface PgnLineStatsProps {
 
 export function PgnLineStats({ stats }: PgnLineStatsProps) {
   return (
-    <div className="flex min-w-0 flex-wrap gap-x-3 gap-y-1 rounded-lg bg-zinc-50 px-3 py-2.5 text-sm text-zinc-700 ring-1 ring-zinc-200">
+    <div className="flex min-w-0 flex-wrap gap-x-3 gap-y-1 rounded-lg bg-background px-3 py-2.5 text-sm text-foreground/90 ring-1 ring-border">
       <span>
         <span className="font-medium">{stats.lineCount}</span>{" "}
         {stats.lineCount === 1 ? "line" : "lines"}

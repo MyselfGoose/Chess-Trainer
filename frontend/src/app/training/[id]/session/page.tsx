@@ -12,8 +12,8 @@ export default function TrainingSessionPage({
   return (
     <Suspense
       fallback={
-        <div className="flex h-full items-center justify-center bg-zinc-100">
-          <p className="text-sm text-zinc-500">Loading training…</p>
+        <div className="flex h-full items-center justify-center bg-surface-muted">
+          <p className="text-sm text-muted-foreground">Loading training…</p>
         </div>
       }
     >

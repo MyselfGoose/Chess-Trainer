@@ -17,21 +17,21 @@ function groupRepertoires(repertoires: Repertoire[]) {
 
 function EmptyState() {
   return (
-    <div className="rounded-xl bg-white p-10 text-center ring-1 ring-zinc-200">
-      <p className="text-lg font-semibold text-zinc-900">No repertoires yet</p>
-      <p className="mt-2 text-sm text-zinc-600">
+    <div className="rounded-xl bg-surface p-10 text-center ring-1 ring-border">
+      <p className="text-lg font-semibold text-foreground">No repertoires yet</p>
+      <p className="mt-2 text-sm text-muted-foreground">
         Import a PGN file or create a repertoire from scratch to get started.
       </p>
       <div className="mt-6 flex flex-wrap justify-center gap-3">
         <Link
           href="/upload"
-          className="rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-800"
+          className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:bg-accent-hover"
         >
           Import PGN
         </Link>
         <Link
           href="/repertoires/new"
-          className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-zinc-800 ring-1 ring-zinc-300 transition hover:bg-zinc-50"
+          className="rounded-lg bg-surface px-4 py-2 text-sm font-semibold text-foreground ring-1 ring-border-strong transition hover:bg-background"
         >
           Create repertoire
         </Link>
@@ -55,7 +55,7 @@ function RepertoireSection({
 
   return (
     <section>
-      <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-zinc-500">
+      <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
         {title}
       </h2>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -76,7 +76,7 @@ export function RepertoireList() {
 
   if (!isHydrated) {
     return (
-      <p className="text-center text-sm text-zinc-500">Loading repertoires…</p>
+      <p className="text-center text-sm text-muted-foreground">Loading repertoires…</p>
     );
   }
 

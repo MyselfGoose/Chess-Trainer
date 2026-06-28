@@ -22,14 +22,14 @@ export function TrainingColorPicker({
             onClick={() => onChange(color)}
             className={`rounded-xl border-2 px-4 py-6 text-center transition ${
               selected
-                ? "border-green-600 bg-green-50 ring-2 ring-green-200"
-                : "border-zinc-200 bg-white hover:border-zinc-300"
+                ? "border-accent bg-accent-muted ring-2 ring-accent/30"
+                : "border-border bg-surface hover:border-border-strong"
             }`}
           >
             <span className="text-3xl" aria-hidden>
               {color === "white" ? "♔" : "♚"}
             </span>
-            <p className="mt-2 text-sm font-semibold text-zinc-900">
+            <p className="mt-2 text-sm font-semibold text-foreground">
               Play as {color === "white" ? "White" : "Black"}
             </p>
           </button>

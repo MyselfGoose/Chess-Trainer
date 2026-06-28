@@ -18,7 +18,7 @@ interface TrainingBoardProps {
 function BoardFrame({ children }: { children: ReactNode }) {
   return (
     <div className="board-fit-container">
-      <div className="board-fit-square rounded-sm p-1 shadow-lg ring-1 ring-black/10">
+      <div className="board-fit-square rounded-sm p-1 shadow-lg ring-1 ring-border">
         {children}
       </div>
     </div>

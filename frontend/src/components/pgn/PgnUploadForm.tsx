@@ -160,20 +160,20 @@ export function PgnUploadForm({ className, onImport }: PgnUploadFormProps) {
         onDrop={onDrop}
         className={`rounded-xl border-2 border-dashed p-10 text-center transition ${
           isDragging
-            ? "border-green-600 bg-green-50"
-            : "border-zinc-300 bg-white hover:border-zinc-400"
+            ? "border-accent bg-accent-muted"
+            : "border-border-strong bg-surface hover:border-border-strong"
         }`}
       >
-        <p className="text-lg font-medium text-zinc-800">
+        <p className="text-lg font-medium text-foreground">
           Drop your .pgn file here
         </p>
-        <p className="mt-1 text-sm text-zinc-500">
+        <p className="mt-1 text-sm text-muted-foreground">
           Opening repertoires with variations supported
         </p>
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="mt-4 rounded-lg bg-green-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-green-800"
+          className="mt-4 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition hover:bg-accent-hover"
         >
           Browse files
         </button>
@@ -190,7 +190,7 @@ export function PgnUploadForm({ className, onImport }: PgnUploadFormProps) {
         <button
           type="button"
           onClick={() => setShowPaste((value) => !value)}
-          className="text-sm font-medium text-green-700 hover:text-green-800"
+          className="text-sm font-medium text-accent hover:text-accent-foreground"
         >
           {showPaste ? "Hide paste area" : "Paste PGN instead"}
         </button>
@@ -202,13 +202,13 @@ export function PgnUploadForm({ className, onImport }: PgnUploadFormProps) {
               onChange={(event) => setPgnText(event.target.value)}
               placeholder="Paste PGN text here..."
               rows={8}
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 font-mono text-sm text-zinc-800 focus:border-green-600 focus:outline-none focus:ring-1 focus:ring-green-600"
+              className="w-full rounded-lg border border-border-strong px-3 py-2 font-mono text-sm text-foreground focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
             />
             <button
               type="button"
               onClick={onSubmitPaste}
               disabled={!pgnText.trim() || isParsing || isImporting}
-              className="mt-2 rounded-lg bg-zinc-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-900 disabled:opacity-50"
+              className="mt-2 rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-white transition hover:bg-foreground disabled:opacity-50"
             >
               Parse PGN
             </button>
@@ -217,11 +217,11 @@ export function PgnUploadForm({ className, onImport }: PgnUploadFormProps) {
       </div>
 
       {parseResult && parseResult.errors.length > 0 ? (
-        <div className="mt-4 rounded-lg bg-red-50 p-4 ring-1 ring-red-200">
-          <p className="text-sm font-medium text-red-800">Parse errors</p>
+        <div className="mt-4 rounded-lg bg-danger-muted p-4 ring-1 ring-danger/30">
+          <p className="text-sm font-medium text-danger-foreground">Parse errors</p>
           <ul className="mt-2 space-y-1">
             {parseResult.errors.map((error, index) => (
-              <li key={index} className="text-sm text-red-700">
+              <li key={index} className="text-sm text-danger">
                 {error.line ? `Line ${error.line}: ` : ""}
                 {error.message}
               </li>
@@ -231,8 +231,8 @@ export function PgnUploadForm({ className, onImport }: PgnUploadFormProps) {
       ) : null}
 
       {parseResult && parseResult.warnings.length > 0 ? (
-        <div className="mt-4 rounded-lg bg-amber-50 p-4 ring-1 ring-amber-200">
-          <p className="text-sm font-medium text-amber-800">Warnings</p>
+        <div className="mt-4 rounded-lg bg-warning-muted p-4 ring-1 ring-warning/30">
+          <p className="text-sm font-medium text-warning-foreground">Warnings</p>
           <ul className="mt-2 space-y-1">
             {parseResult.warnings.map((warning, index) => (
               <li key={index} className="text-sm text-amber-700">
@@ -244,28 +244,28 @@ export function PgnUploadForm({ className, onImport }: PgnUploadFormProps) {
       ) : null}
 
       {hasSuccess && firstGame && firstStats && parseResult ? (
-        <div className="mt-6 rounded-xl bg-white p-5 ring-1 ring-zinc-200">
+        <div className="mt-6 rounded-xl bg-surface p-5 ring-1 ring-border">
           {isImporting ? (
-            <p className="text-sm font-medium text-zinc-600">
+            <p className="text-sm font-medium text-muted-foreground">
               Saving repertoire…
             </p>
           ) : savedRepertoire ? (
-            <p className="text-sm font-medium text-green-700">Ready to study</p>
+            <p className="text-sm font-medium text-accent">Ready to study</p>
           ) : (
             <p className="text-sm font-medium text-amber-700">
               Parsed — save failed
             </p>
           )}
 
-          <p className="mt-1 text-lg font-semibold text-zinc-900">
+          <p className="mt-1 text-lg font-semibold text-foreground">
             {parseResult.games.length}{" "}
             {parseResult.games.length === 1 ? "game" : "games"} parsed
           </p>
-          <p className="mt-1 text-sm text-zinc-600">
+          <p className="mt-1 text-sm text-muted-foreground">
             Saved as{" "}
-            <span className="font-medium text-zinc-800">{repertoireName}</span>
+            <span className="font-medium text-foreground">{repertoireName}</span>
           </p>
-          <p className="mt-1 text-sm text-zinc-500">
+          <p className="mt-1 text-sm text-muted-foreground">
             {firstGame.meta.White ?? "White"} vs {firstGame.meta.Black ?? "Black"}
             {firstGame.meta.Event ? ` — ${firstGame.meta.Event}` : ""}
           </p>
@@ -274,7 +274,7 @@ export function PgnUploadForm({ className, onImport }: PgnUploadFormProps) {
           </div>
 
           {importError ? (
-            <p className="mt-3 text-sm text-red-700">{importError}</p>
+            <p className="mt-3 text-sm text-danger">{importError}</p>
           ) : null}
 
           <div className="mt-4 flex flex-col gap-2 sm:flex-row">
@@ -286,7 +286,7 @@ export function PgnUploadForm({ className, onImport }: PgnUploadFormProps) {
                 }
               }}
               disabled={!savedRepertoire || isImporting}
-              className="flex-1 rounded-lg bg-green-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-green-800 disabled:opacity-50"
+              className="flex-1 rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-hover disabled:opacity-50"
             >
               Study
             </button>
@@ -294,7 +294,7 @@ export function PgnUploadForm({ className, onImport }: PgnUploadFormProps) {
               type="button"
               onClick={() => router.push("/repertoires")}
               disabled={!savedRepertoire || isImporting}
-              className="flex-1 rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-zinc-800 ring-1 ring-zinc-300 transition hover:bg-zinc-50 disabled:opacity-50"
+              className="flex-1 rounded-lg bg-surface px-4 py-2.5 text-sm font-semibold text-foreground ring-1 ring-border-strong transition hover:bg-background disabled:opacity-50"
             >
               View in library
             </button>

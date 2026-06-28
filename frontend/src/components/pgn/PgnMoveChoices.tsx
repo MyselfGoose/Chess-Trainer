@@ -45,22 +45,22 @@ function MoveChoiceCard({
       onClick={onSelect}
       className={`min-h-11 w-full rounded-lg border p-2.5 text-left transition ${
         isSelected
-          ? "border-green-600 bg-green-50 ring-1 ring-green-600"
-          : "border-zinc-200 bg-white hover:border-green-400 hover:bg-green-50/50"
+          ? "border-accent bg-accent-muted ring-1 ring-accent"
+          : "border-border bg-surface hover:border-accent/70 hover:bg-accent-muted/50"
       }`}
     >
       <div className="flex min-w-0 items-start justify-between gap-2">
-        <span className="min-w-0 break-words font-mono text-base font-semibold text-zinc-900">
+        <span className="min-w-0 break-words font-mono text-base font-semibold text-foreground">
           {formatMoveLabel(choice)}
           {nagText ? (
-            <span className="ml-1 font-normal text-zinc-500">{nagText}</span>
+            <span className="ml-1 font-normal text-muted-foreground">{nagText}</span>
           ) : null}
         </span>
         <span
           className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
             choice.isMainLine
-              ? "bg-green-100 text-green-800"
-              : "bg-amber-100 text-amber-800"
+              ? "bg-accent-subtle text-accent-foreground"
+              : "bg-warning-muted text-warning-foreground"
           }`}
         >
           {choice.isMainLine ? "Main" : "Alt"}
@@ -68,14 +68,14 @@ function MoveChoiceCard({
       </div>
 
       {choice.lineCount > 1 ? (
-        <p className="mt-1 text-xs text-zinc-500">
+        <p className="mt-1 text-xs text-muted-foreground">
           Continues {choice.lineCount} lines
         </p>
       ) : null}
 
       {comment ? (
         <p
-          className={`mt-1.5 break-words text-sm leading-snug text-zinc-600 ${
+          className={`mt-1.5 break-words text-sm leading-snug text-muted-foreground ${
             expanded ? "" : "line-clamp-2"
           }`}
         >
@@ -90,7 +90,7 @@ function MoveChoiceCard({
             event.stopPropagation();
             setExpanded((value) => !value);
           }}
-          className="mt-1 inline-block text-xs font-medium text-green-700 hover:text-green-800"
+          className="mt-1 inline-block text-xs font-medium text-accent hover:text-accent-foreground"
         >
           {expanded ? "Show less" : "Show more"}
         </span>
@@ -109,9 +109,9 @@ export function PgnMoveChoices({
 }: PgnMoveChoicesProps) {
   if (isAtLineEnd) {
     return (
-      <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 p-6 text-center">
-        <p className="font-medium text-zinc-800">End of this line</p>
-        <p className="mt-1 text-sm text-zinc-500">
+      <div className="rounded-lg border border-dashed border-border-strong bg-background p-6 text-center">
+        <p className="font-medium text-foreground">End of this line</p>
+        <p className="mt-1 text-sm text-muted-foreground">
           Use Back or click a move in the path to explore another branch.
         </p>
       </div>
@@ -120,8 +120,8 @@ export function PgnMoveChoices({
 
   if (choices.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 p-6 text-center">
-        <p className="font-medium text-zinc-800">
+      <div className="rounded-lg border border-dashed border-border-strong bg-background p-6 text-center">
+        <p className="font-medium text-foreground">
           {isAtRoot ? "No moves in this repertoire" : "No continuations here"}
         </p>
       </div>
@@ -130,7 +130,7 @@ export function PgnMoveChoices({
 
   return (
     <div className="min-w-0">
-      <p className="text-sm font-medium text-zinc-700">
+      <p className="text-sm font-medium text-foreground/90">
         {turnLabel} to move — {choices.length}{" "}
         {choices.length === 1 ? "option" : "options"}
       </p>

@@ -25,7 +25,7 @@ export default function EditRepertoirePage({
   if (!isHydrated) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
-        <p className="text-sm text-zinc-500">Loading…</p>
+        <p className="text-sm text-muted-foreground">Loading…</p>
       </div>
     );
   }
@@ -33,15 +33,15 @@ export default function EditRepertoirePage({
   if (!exists) {
     return (
       <div className="flex min-h-[50vh] flex-col items-center justify-center px-4">
-        <h1 className="text-xl font-semibold text-zinc-900">
+        <h1 className="text-xl font-semibold text-foreground">
           Repertoire not found
         </h1>
-        <p className="mt-2 text-sm text-zinc-600">
+        <p className="mt-2 text-sm text-muted-foreground">
           Only manually created repertoires can be edited.
         </p>
         <Link
           href="/repertoires"
-          className="mt-4 rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white"
+          className="mt-4 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white"
         >
           Back to repertoires
         </Link>

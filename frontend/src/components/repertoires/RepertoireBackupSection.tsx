@@ -29,7 +29,7 @@ export function RepertoireBackupSection() {
       ? "bg-red-600"
       : catalogPercent > 80
         ? "bg-amber-500"
-        : "bg-green-600";
+        : "bg-accent";
 
   const handleFile = async (file: File) => {
     setImportError(null);
@@ -66,26 +66,26 @@ export function RepertoireBackupSection() {
   };
 
   return (
-    <section className="mt-10 rounded-xl bg-white p-6 ring-1 ring-zinc-200">
-      <h2 className="text-lg font-semibold text-zinc-900">Backup & storage</h2>
-      <p className="mt-1 text-sm text-zinc-600">
+    <section className="mt-10 rounded-xl bg-surface p-6 ring-1 ring-border">
+      <h2 className="text-lg font-semibold text-foreground">Backup & storage</h2>
+      <p className="mt-1 text-sm text-muted-foreground">
         Export all RepertoireLab data or restore from a backup file.
       </p>
 
       <div className="mt-4">
-        <div className="flex justify-between text-xs text-zinc-600">
+        <div className="flex justify-between text-xs text-muted-foreground">
           <span>Catalog usage</span>
           <span>
             {formatBytes(stats.catalogBytes)} / {formatBytes(stats.catalogLimitBytes)}
           </span>
         </div>
-        <div className="mt-1 h-2 overflow-hidden rounded-full bg-zinc-200">
+        <div className="mt-1 h-2 overflow-hidden rounded-full bg-border">
           <div
             className={`h-full ${barColor}`}
             style={{ width: `${Math.min(catalogPercent, 100)}%` }}
           />
         </div>
-        <p className="mt-1 text-xs text-zinc-500">
+        <p className="mt-1 text-xs text-muted-foreground">
           Total chess:* storage: {formatBytes(stats.totalBytes)}
         </p>
       </div>
@@ -94,14 +94,14 @@ export function RepertoireBackupSection() {
         <button
           type="button"
           onClick={() => downloadBackupFile()}
-          className="rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white"
+          className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white"
         >
           Export backup
         </button>
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-zinc-800 ring-1 ring-zinc-300"
+          className="rounded-lg bg-surface px-4 py-2 text-sm font-semibold text-foreground ring-1 ring-border-strong"
         >
           Import backup
         </button>
@@ -120,15 +120,15 @@ export function RepertoireBackupSection() {
       </div>
 
       {importError ? (
-        <p className="mt-3 text-sm text-red-700">{importError}</p>
+        <p className="mt-3 text-sm text-danger">{importError}</p>
       ) : null}
       {importSuccess ? (
-        <p className="mt-3 text-sm text-green-700">{importSuccess}</p>
+        <p className="mt-3 text-sm text-accent">{importSuccess}</p>
       ) : null}
 
       {pendingImport ? (
-        <div className="mt-4 rounded-lg bg-amber-50 p-4 ring-1 ring-amber-200">
-          <p className="text-sm text-amber-900">
+        <div className="mt-4 rounded-lg bg-warning-muted p-4 ring-1 ring-warning/30">
+          <p className="text-sm text-warning-foreground">
             Import will replace all local data. Type DELETE to confirm.
           </p>
           <input
@@ -142,14 +142,14 @@ export function RepertoireBackupSection() {
             <button
               type="button"
               onClick={confirmImport}
-              className="rounded-md bg-amber-800 px-3 py-1.5 text-sm font-medium text-white"
+              className="rounded-md bg-warning px-3 py-1.5 text-sm font-medium text-white"
             >
               Confirm import
             </button>
             <button
               type="button"
               onClick={() => setPendingImport(null)}
-              className="rounded-md px-3 py-1.5 text-sm text-zinc-600"
+              className="rounded-md px-3 py-1.5 text-sm text-muted-foreground"
             >
               Cancel
             </button>

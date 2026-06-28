@@ -10,7 +10,10 @@ interface ShortcutGroup {
 const SHORTCUT_GROUPS: ShortcutGroup[] = [
   {
     title: "Global",
-    items: [{ keys: "?", description: "Show this shortcuts dialog" }],
+    items: [
+      { keys: "?", description: "Show this shortcuts dialog" },
+      { keys: "Theme toggle", description: "Use the sun/moon button in the navbar" },
+    ],
   },
   {
     title: "Study & Builder",
@@ -136,7 +139,7 @@ export function KeyboardShortcutsDialog() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-overlay p-4"
       onClick={close}
       role="presentation"
     >
@@ -146,17 +149,17 @@ export function KeyboardShortcutsDialog() {
         role="dialog"
         aria-modal="true"
         aria-labelledby="shortcuts-title"
-        className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-6 shadow-xl ring-1 ring-zinc-200"
+        className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-xl bg-surface p-6 shadow-xl ring-1 ring-border"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-4">
-          <h2 id="shortcuts-title" className="text-lg font-semibold text-zinc-900">
+          <h2 id="shortcuts-title" className="text-lg font-semibold text-foreground">
             Keyboard shortcuts
           </h2>
           <button
             type="button"
             onClick={close}
-            className="rounded-md px-2 py-1 text-sm text-zinc-500 hover:bg-zinc-100"
+            className="rounded-md px-2 py-1 text-sm text-muted-foreground hover:bg-surface-muted"
           >
             Esc
           </button>
@@ -164,12 +167,12 @@ export function KeyboardShortcutsDialog() {
         <div className="mt-4 space-y-5">
           {SHORTCUT_GROUPS.map((group) => (
             <section key={group.title}>
-              <h3 className="text-sm font-semibold text-zinc-700">{group.title}</h3>
+              <h3 className="text-sm font-semibold text-foreground/90">{group.title}</h3>
               <dl className="mt-2 space-y-2">
                 {group.items.map((item) => (
                   <div key={item.keys} className="flex justify-between gap-4 text-sm">
-                    <dt className="font-mono text-zinc-500">{item.keys}</dt>
-                    <dd className="text-right text-zinc-700">{item.description}</dd>
+                    <dt className="font-mono text-muted-foreground">{item.keys}</dt>
+                    <dd className="text-right text-foreground/90">{item.description}</dd>
                   </div>
                 ))}
               </dl>

@@ -38,10 +38,10 @@ export function TrainingSummary({
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-y-auto p-4">
-      <h2 className="text-xl font-bold text-zinc-900">
+      <h2 className="text-xl font-bold text-foreground">
         {summary.endedEarly ? "Training ended early" : "Training complete"}
       </h2>
-      <p className="mt-1 text-sm text-zinc-600">
+      <p className="mt-1 text-sm text-muted-foreground">
         {passed.length} / {attempted} lines passed ({passRate}%)
         {summary.endedEarly ? (
           <>
@@ -52,28 +52,28 @@ export function TrainingSummary({
       </p>
 
       {trend ? (
-        <p className="mt-2 text-sm text-zinc-600">
+        <p className="mt-2 text-sm text-muted-foreground">
           Pass rate trend: {Math.round(trend.from * 100)}% →{" "}
           {Math.round(trend.to * 100)}% over last sessions
         </p>
       ) : null}
 
       {summary.endedEarly && attempted === 0 ? (
-        <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 ring-1 ring-amber-200">
+        <p className="mt-2 rounded-lg bg-warning-muted px-3 py-2 text-sm text-warning-foreground ring-1 ring-warning/30">
           You ended before completing any lines. Start again when you are ready.
         </p>
       ) : null}
 
       {passed.length > 0 ? (
         <section className="mt-6">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-green-700">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-accent">
             Passed ({passed.length})
           </h3>
           <ul className="mt-2 space-y-2">
             {passed.map((result) => (
               <li
                 key={result.lineId}
-                className="rounded-lg bg-green-50 px-3 py-2 font-mono text-xs text-green-900 ring-1 ring-green-200"
+                className="rounded-lg bg-accent-muted px-3 py-2 font-mono text-xs text-accent-foreground ring-1 ring-accent/30"
               >
                 {result.label}
               </li>
@@ -84,18 +84,18 @@ export function TrainingSummary({
 
       {failed.length > 0 ? (
         <section className="mt-6">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-red-700">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-danger">
             Needs work ({failed.length})
           </h3>
           <ul className="mt-2 space-y-2">
             {failed.map((result) => (
               <li
                 key={result.lineId}
-                className="rounded-lg bg-red-50 px-3 py-2 ring-1 ring-red-200"
+                className="rounded-lg bg-danger-muted px-3 py-2 ring-1 ring-danger/30"
               >
                 <p className="font-mono text-xs text-red-900">{result.label}</p>
                 {result.expectedSan ? (
-                  <p className="mt-1 text-xs text-red-700">
+                  <p className="mt-1 text-xs text-danger">
                     Expected: {result.expectedSan}
                     {result.failedAtSan
                       ? ` · You played: ${result.failedAtSan}`
@@ -110,14 +110,14 @@ export function TrainingSummary({
 
       {summary.skippedLines.length > 0 ? (
         <section className="mt-6">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             Not attempted ({summary.skippedLines.length})
           </h3>
           <ul className="mt-2 space-y-2">
             {summary.skippedLines.map((line) => (
               <li
                 key={line.lineId}
-                className="rounded-lg bg-zinc-50 px-3 py-2 font-mono text-xs text-zinc-600 ring-1 ring-zinc-200"
+                className="rounded-lg bg-background px-3 py-2 font-mono text-xs text-muted-foreground ring-1 ring-border"
               >
                 {line.label}
               </li>
@@ -135,7 +135,7 @@ export function TrainingSummary({
                 `/training/${repertoireId}/session?color=${summary.userColor}&lines=${encodeURIComponent(failedLineIds)}`,
               )
             }
-            className="rounded-lg bg-green-700 px-4 py-2.5 text-sm font-semibold text-white"
+            className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-white"
           >
             Train failed lines
           </button>
@@ -148,7 +148,7 @@ export function TrainingSummary({
                 `/training/${repertoireId}/session?color=${summary.userColor}&lines=${encodeURIComponent(skippedLineIds)}`,
               )
             }
-            className="rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-zinc-800 ring-1 ring-zinc-300"
+            className="rounded-lg bg-surface px-4 py-2.5 text-sm font-semibold text-foreground ring-1 ring-border-strong"
           >
             Train skipped lines
           </button>
@@ -160,19 +160,19 @@ export function TrainingSummary({
               `/training/${repertoireId}/session?color=${summary.userColor}`,
             )
           }
-          className="rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-zinc-800 ring-1 ring-zinc-300"
+          className="rounded-lg bg-surface px-4 py-2.5 text-sm font-semibold text-foreground ring-1 ring-border-strong"
         >
           Train again
         </button>
         <Link
           href={`/study/${repertoireId}`}
-          className="rounded-lg bg-white px-4 py-2.5 text-center text-sm font-semibold text-zinc-800 ring-1 ring-zinc-300"
+          className="rounded-lg bg-surface px-4 py-2.5 text-center text-sm font-semibold text-foreground ring-1 ring-border-strong"
         >
           Study repertoire
         </Link>
         <Link
           href="/training"
-          className="rounded-lg px-4 py-2.5 text-center text-sm font-medium text-zinc-600"
+          className="rounded-lg px-4 py-2.5 text-center text-sm font-medium text-muted-foreground"
         >
           Back to training
         </Link>

@@ -41,7 +41,7 @@ export function TrainingRepertoireList() {
 
   if (!isHydrated) {
     return (
-      <p className="text-center text-sm text-zinc-500">Loading repertoires…</p>
+      <p className="text-center text-sm text-muted-foreground">Loading repertoires…</p>
     );
   }
 
@@ -54,7 +54,7 @@ export function TrainingRepertoireList() {
           <>
             <Link
               href="/repertoires"
-              className="rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white"
+              className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white"
             >
               Go to repertoires
             </Link>
@@ -66,7 +66,7 @@ export function TrainingRepertoireList() {
 
   return (
     <div>
-      <label className="mb-4 flex items-center gap-2 text-sm text-zinc-700">
+      <label className="mb-4 flex items-center gap-2 text-sm text-foreground/90">
         <input
           type="checkbox"
           checked={dueOnly}
@@ -96,25 +96,25 @@ export function TrainingRepertoireList() {
             return (
               <article
                 key={repertoire.id}
-                className="rounded-xl bg-white p-5 ring-1 ring-zinc-200"
+                className="rounded-xl bg-surface p-5 ring-1 ring-border"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <h3 className="truncate text-lg font-semibold text-zinc-900">
+                    <h3 className="truncate text-lg font-semibold text-foreground">
                       {repertoire.name}
                     </h3>
                     <div className="mt-1 flex flex-wrap gap-2">
                       <span
                         className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
                           repertoire.source === "imported"
-                            ? "bg-blue-50 text-blue-700"
+                            ? "bg-info-muted text-blue-700"
                             : "bg-purple-50 text-purple-700"
                         }`}
                       >
                         {repertoire.source === "imported" ? "Imported" : "Created"}
                       </span>
                       {dueCount > 0 ? (
-                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">
+                        <span className="rounded-full bg-warning-muted px-2 py-0.5 text-xs font-semibold text-warning-foreground">
                           {dueCount} due
                         </span>
                       ) : null}
@@ -123,38 +123,38 @@ export function TrainingRepertoireList() {
                 </div>
 
                 <dl className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
-                  <div className="rounded-lg bg-zinc-50 px-2 py-2">
-                    <dt className="text-zinc-500">Lines</dt>
-                    <dd className="font-semibold text-zinc-900">{lineCount}</dd>
+                  <div className="rounded-lg bg-background px-2 py-2">
+                    <dt className="text-muted-foreground">Lines</dt>
+                    <dd className="font-semibold text-foreground">{lineCount}</dd>
                   </div>
-                  <div className="rounded-lg bg-zinc-50 px-2 py-2">
-                    <dt className="text-zinc-500">As White</dt>
-                    <dd className="font-semibold text-zinc-900">{whiteLines}</dd>
+                  <div className="rounded-lg bg-background px-2 py-2">
+                    <dt className="text-muted-foreground">As White</dt>
+                    <dd className="font-semibold text-foreground">{whiteLines}</dd>
                   </div>
-                  <div className="rounded-lg bg-zinc-50 px-2 py-2">
-                    <dt className="text-zinc-500">As Black</dt>
-                    <dd className="font-semibold text-zinc-900">{blackLines}</dd>
+                  <div className="rounded-lg bg-background px-2 py-2">
+                    <dt className="text-muted-foreground">As Black</dt>
+                    <dd className="font-semibold text-foreground">{blackLines}</dd>
                   </div>
                 </dl>
 
                 {stats.lastTrainedAt ? (
-                  <p className="mt-3 text-xs text-zinc-500">
+                  <p className="mt-3 text-xs text-muted-foreground">
                     Last trained {formatLastTrained(stats.lastTrainedAt)} —{" "}
                     {formatPassRate(stats.lastPassRate)} passed
                   </p>
                 ) : (
-                  <p className="mt-3 text-xs text-zinc-500">Not trained yet</p>
+                  <p className="mt-3 text-xs text-muted-foreground">Not trained yet</p>
                 )}
 
                 {canTrain ? (
                   <Link
                     href={`/training/${repertoire.id}`}
-                    className="mt-4 block min-h-11 w-full rounded-lg bg-green-700 px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-green-800"
+                    className="mt-4 block min-h-11 w-full rounded-lg bg-accent px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-accent-hover"
                   >
                     Train
                   </Link>
                 ) : (
-                  <div className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-center text-sm text-amber-800 ring-1 ring-amber-200">
+                  <div className="mt-4 rounded-lg bg-warning-muted px-3 py-2 text-center text-sm text-warning-foreground ring-1 ring-warning/30">
                     Register lines before training.{" "}
                     <Link
                       href={`/repertoires/${repertoire.id}/edit`}
