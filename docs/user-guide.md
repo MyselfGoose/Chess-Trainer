@@ -40,6 +40,17 @@ Import existing opening files instead of building from scratch.
 
 - **File upload** — drag-and-drop or file picker (`.pgn` files)
 - **Paste** — paste raw PGN text into the text area
+- **Lichess studies** — paste a Lichess study URL to see import instructions (you still upload the downloaded PGN)
+
+### Lichess study import
+
+RepertoireLab cannot fetch studies from Lichess directly. To import a Lichess study:
+
+1. Open the study on [lichess.org](https://lichess.org).
+2. Use the study menu → **Download PGN**.
+3. Upload or paste the downloaded file on `/upload`.
+
+If you paste a Lichess study URL (e.g. `https://lichess.org/study/...`), an instructions panel appears with a link to the study.
 
 ### What is preserved
 
@@ -102,6 +113,7 @@ Each card shows:
 | **Train** | Open training setup for this repertoire |
 | **Edit** | Open the builder (created repertoires only) |
 | **Duplicate & Edit** | Fork an imported repertoire into an editable copy (imported only) |
+| **Export PGN** | Download the full repertoire as a PGN file (one-click from the card) |
 | **Delete** | Remove from local storage (irreversible) |
 
 ### Duplicate & Edit (imported repertoires)
@@ -130,6 +142,10 @@ Click **New repertoire** to open the builder at `/repertoires/new`.
 - Reorder chapters with Up/Down; delete removes the chapter only (lines stay in the repertoire).
 
 In **study mode**, chapter badges appear at line endings; click a badge to train that chapter, or use **Manage chapters** to edit.
+
+Use **Export PGN** in the study header to download with scope options (current game, full repertoire, or chapter). Chapter export includes full games that contain chapter lines.
+
+Below the path bar, an **opening badge** shows the ECO code and name when recognized (e.g. `C50 — Italian Game`). The starting position shows no badge.
 
 In **training setup**, check one or more chapters to limit the session to those lines. Leave all unchecked to train every line for your color. The `?chapter=` URL parameter pre-selects a chapter (from study badges).
 
@@ -227,6 +243,7 @@ Walk your repertoire on an interactive board with repertoire-constrained moves.
 | **Game selector** | Switch between games in multi-game repertoires |
 | **Game info & stats** | PGN headers and line statistics |
 | **Path bar** | Breadcrumb of moves from root to current position |
+| **Opening badge** | ECO code and opening name when recognized (e.g. `C50 — Italian Game`) |
 | **Move choices** | Next repertoire moves with main-line / variation labels |
 | **Back one move** | Step to parent position |
 
@@ -244,6 +261,22 @@ Your current node and selected game index are saved per repertoire. Returning to
 ### Flip board
 
 Use **Flip** to change orientation (White or Black below). Orientation is per-session and not persisted.
+
+### Export PGN
+
+Use **Export PGN** in the study header to download PGN with scope options:
+
+| Scope | Contents |
+|-------|----------|
+| **Current game** | Only the game you are studying (default when multiple games exist) |
+| **Full repertoire** | All games in the repertoire |
+| **Chapter** | Full games that contain lines assigned to the selected chapter |
+
+Chapter export includes complete game trees for those games (shared prefixes and variations outside the chapter may appear).
+
+### Opening names
+
+Below the path bar, an opening badge shows the ECO code and name when the current position matches the bundled opening database. Navigate to a different branch and the badge updates. Opening data is loaded on demand and cached after the first lookup.
 
 ### Duplicate & Edit
 

@@ -12,6 +12,7 @@ import {
 } from "@/components/chess/MoveNavigationBindings";
 import { PromotionDialog } from "@/components/chess/PromotionDialog";
 import { DuplicateForkModal } from "@/components/repertoires/DuplicateForkModal";
+import { ExportPgnModal } from "@/components/repertoires/ExportPgnModal";
 import { PgnStudyMovesPanel } from "@/components/pgn/PgnStudyMovesPanel";
 import { PgnStudyToolsPanel } from "@/components/pgn/PgnStudyToolsPanel";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -21,6 +22,7 @@ import { findAlternativePaths } from "@/lib/pgn/transpositions";
 import { findGaps } from "@/lib/repertoires/gaps";
 import { getChaptersForLine } from "@/lib/repertoires";
 import { useBoardAnnotationState } from "@/hooks/useBoardAnnotationState";
+import { useOpeningLookup } from "@/hooks/useOpeningLookup";
 import { usePgnStudy } from "@/hooks/usePgnStudy";
 
 interface StudyPendingPromotion {
@@ -71,6 +73,7 @@ export default function StudyPage({
   const [studyPromotion, setStudyPromotion] =
     useState<StudyPendingPromotion | null>(null);
   const [showFork, setShowFork] = useState(false);
+  const [showExport, setShowExport] = useState(false);
 
   const {
     setOrientation: setStudyOrientation,
@@ -156,6 +159,15 @@ export default function StudyPage({
     return getChaptersForLine(study.repertoire.meta, currentLineId);
   }, [currentLineId, study.repertoire]);
 
+  const sanMoves = useMemo(
+    () => study.currentPath.map((node) => node.san).filter((san) => san !== ""),
+    [study.currentPath],
+  );
+  const { opening, isLoading: isOpeningLoading } = useOpeningLookup(
+    study.boardFen,
+    sanMoves,
+  );
+
   if (!study.isHydrated) {
     return (
       <div className="flex h-full min-h-0 items-center justify-center bg-surface-muted">
@@ -196,6 +208,8 @@ export default function StudyPage({
           lineStats={study.lineStats}
           repertoireName={study.repertoire.name}
           preparationGaps={preparationGaps}
+          opening={opening}
+          isOpeningLoading={isOpeningLoading}
           onSelectGame={study.selectGame}
           onSelectNode={study.goToNode}
           onNavigateToGap={(nodeId) => study.goToNode(nodeId)}
@@ -218,6 +232,8 @@ export default function StudyPage({
             lineStats={study.lineStats}
             repertoireName={study.repertoire.name}
             preparationGaps={preparationGaps}
+            opening={opening}
+            isOpeningLoading={isOpeningLoading}
             onSelectGame={study.selectGame}
             onSelectNode={study.goToNode}
             onNavigateToGap={(nodeId) => study.goToNode(nodeId)}
@@ -235,6 +251,13 @@ export default function StudyPage({
             </h1>
           </div>
           <div className="ml-auto flex shrink-0 flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowExport(true)}
+              className="rounded-md bg-surface px-3 py-1.5 text-sm font-medium text-foreground/90 ring-1 ring-border transition hover:bg-background"
+            >
+              Export PGN
+            </button>
             <FlipBoardButton orientation={study.orientation} onFlip={flipBoard} />
             {study.repertoire.source === "imported" ? (
               <button
@@ -350,6 +373,14 @@ export default function StudyPage({
             router.push(`/repertoires/${newId}/edit`);
           }}
           onCancel={() => setShowFork(false)}
+        />
+      ) : null}
+
+      {showExport && study.repertoire ? (
+        <ExportPgnModal
+          repertoire={study.repertoire}
+          selectedGameIndex={study.selectedGameIndex}
+          onClose={() => setShowExport(false)}
         />
       ) : null}
     </div>

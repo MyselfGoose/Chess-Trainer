@@ -3,12 +3,14 @@
 import Link from "next/link";
 
 import type { LineStats, StudyGame, StudyNode } from "@/lib/pgn";
+import type { OpeningInfo } from "@/lib/openings";
 import type { RepertoireGap } from "@/lib/repertoires/gaps";
 
 import { PgnGameSelector } from "./PgnGameSelector";
 import { PgnHeadersCard } from "./PgnHeadersCard";
 import { PgnLineSearch } from "./PgnLineSearch";
 import { PgnLineStats } from "./PgnLineStats";
+import { PgnOpeningBadge } from "./PgnOpeningBadge";
 import { PgnPathBar } from "./PgnPathBar";
 
 interface PgnStudyToolsPanelProps {
@@ -20,6 +22,8 @@ interface PgnStudyToolsPanelProps {
   lineStats: LineStats;
   repertoireName?: string;
   preparationGaps?: RepertoireGap[];
+  opening?: OpeningInfo | null;
+  isOpeningLoading?: boolean;
   onSelectGame: (index: number) => void;
   onSelectNode: (nodeId: string) => void;
   onNavigateToGap?: (leafNodeId: string) => void;
@@ -35,6 +39,8 @@ export function PgnStudyToolsPanel({
   lineStats,
   repertoireName,
   preparationGaps = [],
+  opening = null,
+  isOpeningLoading = false,
   onSelectGame,
   onSelectNode,
   onNavigateToGap,
@@ -69,6 +75,8 @@ export function PgnStudyToolsPanel({
         currentNodeId={currentNodeId}
         onSelect={onSelectNode}
       />
+
+      <PgnOpeningBadge opening={opening} isLoading={isOpeningLoading} />
 
       {preparationGaps.length > 0 && onNavigateToGap ? (
         <details className="shrink-0 rounded-lg ring-1 ring-border">

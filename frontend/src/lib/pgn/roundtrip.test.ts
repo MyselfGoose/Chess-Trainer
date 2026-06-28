@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { studyGameToPgn } from "./export";
+import { repertoireToPgn, studyGameToPgn } from "./export";
 import { parsePgnDatabase } from "./parse";
 import type { StudyGame } from "./types";
 
@@ -194,6 +194,79 @@ describe("PGN round-trip", () => {
 
     const squareTrip = roundTrip(SQUARE_PGN);
     expect(squareTrip.exported).toContain("[%csl");
+  });
+
+  it("exports structured arrows persisted on node fields", () => {
+    const { original, exported, reparsed } = roundTrip(ARROW_PGN);
+    const moveNode = Object.values(original.nodes).find(
+      (node) => node.san === "e4",
+    );
+    expect(moveNode?.arrows?.length).toBeGreaterThan(0);
+
+    const structuredGame: StudyGame = {
+      ...original,
+      nodes: {
+        ...original.nodes,
+        [moveNode!.id]: {
+          ...moveNode!,
+          comment: undefined,
+          arrows: [{ color: "G", from: "e2", to: "e4" }],
+          squares: [{ color: "Y", square: "e4" }],
+        },
+      },
+    };
+
+    const structuredExport = studyGameToPgn(structuredGame);
+    expect(structuredExport).toContain("[%cal Ge2e4]");
+    expect(structuredExport).toContain("[%csl Ye4]");
+
+    const structuredReparsed = parsePgnDatabase(structuredExport).games[0]!;
+    const reparsedNode = Object.values(structuredReparsed.nodes).find(
+      (node) => node.san === "e4",
+    );
+    expect(reparsedNode?.arrows).toEqual(
+      expect.arrayContaining([{ color: "G", from: "e2", to: "e4" }]),
+    );
+    expect(reparsedNode?.squares).toEqual(
+      expect.arrayContaining([{ color: "Y", square: "e4" }]),
+    );
+
+    expect(exported).toContain("[%cal");
+    expect(countMoveNodes(reparsed)).toBe(countMoveNodes(original));
+  });
+
+  it("exports multi-game repertoires", () => {
+    const first = parsePgnDatabase(COMMENT_PGN).games[0]!;
+    const second = parsePgnDatabase(VARIATION_PGN).games[0]!;
+    const exported = repertoireToPgn([first, second]);
+    const reparsed = parsePgnDatabase(exported);
+    expect(reparsed.games).toHaveLength(2);
+    expect(reparsed.games[0]?.meta.Event).toBe("Comments");
+    expect(reparsed.games[1]?.meta.Event).toBe("Repertoire");
+  });
+
+  it("preserves deeply nested variations", () => {
+    const deepPgn = `[Event "Deep"]
+1. e4 e5 2. Nf3 Nc6 (2... d6 3. d4 (3... exd4 4. Nxd4 Nf6) exd5) 3. Bb5 *
+`;
+    const { original, reparsed } = roundTrip(deepPgn);
+    expect(collectSanPaths(reparsed).sort()).toEqual(
+      collectSanPaths(original).sort(),
+    );
+  });
+
+  it("exports comment, NAG, and [%cal] together", () => {
+    const combinedPgn = `[Event "Combined"]
+1. e4 $1 { Idea } { [%cal Ge2e4] } 1... e5 *
+`;
+    const { exported, reparsed } = roundTrip(combinedPgn);
+    expect(exported).toMatch(/\$1/);
+    expect(exported).toContain("Idea");
+    expect(exported).toContain("[%cal");
+    const e4Node = Object.values(reparsed.nodes).find((node) => node.san === "e4");
+    expect(e4Node?.comment).toContain("Idea");
+    expect(e4Node?.annotations?.length).toBeGreaterThan(0);
+    expect(e4Node?.arrows?.length).toBeGreaterThan(0);
   });
 });
 

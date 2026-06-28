@@ -1,5 +1,7 @@
 import type { Arrow, SquareAnnotation } from "@echecs/pgn";
 
+import type { Repertoire } from "@/lib/repertoires/types";
+
 import { formatNagsForExport } from "./nags";
 import type { StudyGame, StudyNode } from "./types";
 
@@ -147,6 +149,104 @@ export function studyGameToPgn(game: StudyGame): string {
 
 export function repertoireToPgn(games: StudyGame[]): string {
   return games.map(studyGameToPgn).join("\n");
+}
+
+export type ExportScope = "currentGame" | "fullRepertoire" | "chapter";
+
+export interface ExportRepertoireOptions {
+  scope: ExportScope;
+  gameIndex?: number;
+  chapterId?: string;
+}
+
+function parseGameIndexFromLineId(lineId: string): number | null {
+  const match = /^(\d+):/.exec(lineId);
+  if (!match) {
+    return null;
+  }
+  const index = Number(match[1]);
+  return Number.isInteger(index) && index >= 0 ? index : null;
+}
+
+export function gameIndicesForChapter(
+  repertoire: Repertoire,
+  chapterId: string,
+): number[] {
+  const chapter = repertoire.meta.chapters.find(
+    (entry) => entry.id === chapterId,
+  );
+  if (!chapter) {
+    return [];
+  }
+  const indices = new Set<number>();
+  for (const lineId of chapter.lineIds) {
+    const gameIndex = parseGameIndexFromLineId(lineId);
+    if (gameIndex !== null) {
+      indices.add(gameIndex);
+    }
+  }
+  return [...indices].sort((left, right) => left - right);
+}
+
+export function gamesForChapter(
+  repertoire: Repertoire,
+  chapterId: string,
+): StudyGame[] {
+  return gameIndicesForChapter(repertoire, chapterId)
+    .map((index) => repertoire.games[index])
+    .filter((game): game is StudyGame => game !== undefined);
+}
+
+export function exportRepertoirePgn(
+  repertoire: Repertoire,
+  options: ExportRepertoireOptions,
+): string {
+  switch (options.scope) {
+    case "fullRepertoire":
+      return repertoireToPgn(repertoire.games);
+    case "currentGame": {
+      const index = options.gameIndex ?? 0;
+      const game = repertoire.games[index];
+      return game ? studyGameToPgn(game) : "";
+    }
+    case "chapter": {
+      if (!options.chapterId) {
+        return "";
+      }
+      return repertoireToPgn(gamesForChapter(repertoire, options.chapterId));
+    }
+    default: {
+      const exhaustive: never = options.scope;
+      return exhaustive;
+    }
+  }
+}
+
+export function buildExportFileName(
+  repertoireName: string,
+  options: ExportRepertoireOptions,
+  repertoire: Repertoire,
+): string {
+  const base = repertoireName.trim() || "repertoire";
+  switch (options.scope) {
+    case "fullRepertoire":
+      return base;
+    case "currentGame": {
+      const index = options.gameIndex ?? 0;
+      const event = repertoire.games[index]?.meta.Event?.trim();
+      return event ? `${base} - ${event}` : `${base} - game ${index + 1}`;
+    }
+    case "chapter": {
+      const chapter = repertoire.meta.chapters.find(
+        (entry) => entry.id === options.chapterId,
+      );
+      return chapter ? `${base} - ${chapter.name}` : `${base} - chapter`;
+    }
+    default: {
+      const exhaustive: never = options.scope;
+      return exhaustive;
+    }
+  }
 }
 
 export function downloadPgnFile(content: string, fileName: string): void {

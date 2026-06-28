@@ -1,0 +1,8 @@
+[Event "Lichess Study Sample"]
+[Site "https://lichess.org/study"]
+[Date "2024.01.01"]
+[White "RepertoireLab"]
+[Black "Sample"]
+[Result "*"]
+
+1. e4 { King's pawn } 1... c5 { Sicilian } 2. Nf3 { Develop } { [%cal Ge2e4,Gg1f3] } 2... d6 (2... Nc6 3. d4 cxd4 4. Nxd4) 3. d4 { Open center } *

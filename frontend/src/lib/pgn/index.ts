@@ -11,7 +11,18 @@ export {
 } from "./navigation";
 export type { MoveChoice } from "./navigation";
 export { computeLineStats, countLeavesFrom } from "./stats";
-export { repertoireToPgn, studyGameToPgn, downloadPgnFile } from "./export";
+export {
+  buildExportFileName,
+  exportRepertoirePgn,
+  gameIndicesForChapter,
+  gamesForChapter,
+  repertoireToPgn,
+  studyGameToPgn,
+  downloadPgnFile,
+} from "./export";
+export type { ExportRepertoireOptions, ExportScope } from "./export";
+export { detectLichessStudyUrl, isLichessStudyUrl } from "./lichessImport";
+export type { LichessStudyUrlInfo } from "./lichessImport";
 export {
   buildPositionIndex,
   findNodesByFen,

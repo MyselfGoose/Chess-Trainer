@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import type { LineStats, MoveChoice, StudyGame, StudyNode } from "@/lib/pgn";
+import type { OpeningInfo } from "@/lib/openings";
 import type { RepertoireGap } from "@/lib/repertoires/gaps";
 
 import { PgnCommentCard } from "./PgnCommentCard";
@@ -11,6 +12,7 @@ import { PgnHeadersCard } from "./PgnHeadersCard";
 import { PgnLineSearch } from "./PgnLineSearch";
 import { PgnLineStats } from "./PgnLineStats";
 import { PgnMoveChoices } from "./PgnMoveChoices";
+import { PgnOpeningBadge } from "./PgnOpeningBadge";
 import { PgnPathBar } from "./PgnPathBar";
 
 interface PgnStudyPanelProps {
@@ -29,6 +31,8 @@ interface PgnStudyPanelProps {
   onBack: () => void;
   repertoireName?: string;
   preparationGaps?: RepertoireGap[];
+  opening?: OpeningInfo | null;
+  isOpeningLoading?: boolean;
   onNavigateToGap?: (leafNodeId: string) => void;
   onSelectSearchLine?: (leafNodeId: string) => void;
 }
@@ -49,6 +53,8 @@ export function PgnStudyPanel({
   onBack,
   repertoireName,
   preparationGaps = [],
+  opening = null,
+  isOpeningLoading = false,
   onNavigateToGap,
   onSelectSearchLine,
 }: PgnStudyPanelProps) {
@@ -126,6 +132,8 @@ export function PgnStudyPanel({
         currentNodeId={currentNodeId}
         onSelect={onSelectNode}
       />
+
+      <PgnOpeningBadge opening={opening} isLoading={isOpeningLoading} />
 
       <PgnCommentCard node={currentNode} />
 

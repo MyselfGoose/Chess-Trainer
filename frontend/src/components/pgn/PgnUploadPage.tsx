@@ -36,7 +36,8 @@ export function PgnUploadPage() {
           <h1 className="text-3xl font-bold text-foreground">Import a PGN</h1>
           <p className="mt-2 text-muted-foreground">
             Upload or paste a PGN file — it is saved to your library automatically
-            using the file name.
+            using the file name. Lichess studies can be imported by downloading
+            the PGN from Lichess and uploading it here.
           </p>
         </header>
 

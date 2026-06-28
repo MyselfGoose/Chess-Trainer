@@ -3,10 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
 
-import { computeLineStats, parsePgnDatabase } from "@/lib/pgn";
-import type { PgnParseResult, StudyGame } from "@/lib/pgn";
+import { computeLineStats, detectLichessStudyUrl, parsePgnDatabase } from "@/lib/pgn";
+import type { LichessStudyUrlInfo, PgnParseResult, StudyGame } from "@/lib/pgn";
 import { REPERTOIRE_NAME_MAX_LENGTH, type Repertoire } from "@/lib/repertoires";
 
+import { LichessImportPanel } from "./LichessImportPanel";
 import { PgnLineStats } from "./PgnLineStats";
 
 export interface PgnSavePayload {
@@ -43,6 +44,8 @@ export function PgnUploadForm({ className, onImport }: PgnUploadFormProps) {
   const [savedRepertoire, setSavedRepertoire] = useState<Repertoire | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
+  const [lichessInfo, setLichessInfo] = useState<LichessStudyUrlInfo | null>(null);
+  const [showLichessPanel, setShowLichessPanel] = useState(false);
 
   const importParsedGames = useCallback(
     async (result: PgnParseResult, sourceFileName?: string) => {
@@ -138,6 +141,15 @@ export function PgnUploadForm({ className, onImport }: PgnUploadFormProps) {
     [handleFile],
   );
 
+  const updatePgnText = useCallback((text: string) => {
+    setPgnText(text);
+    const detected = detectLichessStudyUrl(text);
+    setLichessInfo(detected);
+    if (detected) {
+      setShowLichessPanel(true);
+    }
+  }, []);
+
   const onSubmitPaste = useCallback(() => {
     if (pgnText.trim()) {
       void handleParse(pgnText.trim());
@@ -151,6 +163,12 @@ export function PgnUploadForm({ className, onImport }: PgnUploadFormProps) {
 
   return (
     <div className={className}>
+      <LichessImportPanel
+        studyInfo={lichessInfo}
+        expanded={showLichessPanel}
+        onToggle={() => setShowLichessPanel((value) => !value)}
+      />
+
       <div
         onDragOver={(event) => {
           event.preventDefault();
@@ -199,8 +217,8 @@ export function PgnUploadForm({ className, onImport }: PgnUploadFormProps) {
           <div className="mt-3">
             <textarea
               value={pgnText}
-              onChange={(event) => setPgnText(event.target.value)}
-              placeholder="Paste PGN text here..."
+              onChange={(event) => updatePgnText(event.target.value)}
+              placeholder="Paste PGN text or a Lichess study URL…"
               rows={8}
               className="w-full rounded-lg border border-border-strong px-3 py-2 font-mono text-sm text-foreground focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
             />
