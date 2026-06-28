@@ -20,9 +20,13 @@ import { PromotionDialog } from "@/components/chess/PromotionDialog";
 import { PgnLineStats } from "@/components/pgn/PgnLineStats";
 import { PgnPathBar } from "@/components/pgn/PgnPathBar";
 import { BuilderPositionNotes } from "@/components/repertoires/BuilderPositionNotes";
+import { BulkRegisterModal } from "@/components/repertoires/BulkRegisterModal";
+import { CopyLineModal } from "@/components/repertoires/CopyLineModal";
 import { DeleteSubtreeModal } from "@/components/repertoires/DeleteSubtreeModal";
+import { SetPositionModal } from "@/components/repertoires/SetPositionModal";
 import type { PromotionPiece } from "@/lib/chess/types";
 import { annotationsFromPgnNode } from "@/lib/chess/annotations";
+import { gameHasMoves } from "@/lib/repertoires/setStartFen";
 import {
   BUILDER_ORIENTATION_KEY,
   loadOrientationPreference,
@@ -87,6 +91,9 @@ export function RepertoireBuilder({
   const [pendingPromotion, setPendingPromotion] =
     useState<PendingPromotion | null>(null);
   const [deleteImpact, setDeleteImpact] = useState<PruneImpact | null>(null);
+  const [showBulkRegister, setShowBulkRegister] = useState(false);
+  const [showSetPosition, setShowSetPosition] = useState(false);
+  const [showCopyLine, setShowCopyLine] = useState(false);
 
   useEffect(() => {
     saveOrientationPreference(BUILDER_ORIENTATION_KEY, orientation);
@@ -251,6 +258,13 @@ export function RepertoireBuilder({
             </p>
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowSetPosition(true)}
+              className="rounded-md bg-surface px-3 py-1.5 text-sm font-medium text-foreground/90 ring-1 ring-border transition hover:bg-background"
+            >
+              Set position
+            </button>
             <FlipBoardButton orientation={orientation} onFlip={flipBoard} />
             <button
               type="button"
@@ -328,6 +342,23 @@ export function RepertoireBuilder({
         >
           Register line
         </button>
+
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setShowBulkRegister(true)}
+            className="min-h-10 flex-1 rounded-md bg-surface-muted px-3 py-2 text-sm font-medium text-foreground/90 transition hover:bg-surface"
+          >
+            Bulk register
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowCopyLine(true)}
+            className="min-h-10 flex-1 rounded-md bg-surface-muted px-3 py-2 text-sm font-medium text-foreground/90 transition hover:bg-surface"
+          >
+            Import line
+          </button>
+        </div>
 
         {builder.registerMessage ? (
           <p
@@ -448,6 +479,47 @@ export function RepertoireBuilder({
           impact={deleteImpact}
           onConfirm={handleDeleteConfirm}
           onCancel={() => setDeleteImpact(null)}
+        />
+      ) : null}
+
+      {showBulkRegister ? (
+        <BulkRegisterModal
+          maxDepth={builder.lineStats.maxDepth}
+          currentMaxPly={builder.lineStats.maxDepth}
+          registeredLeafIds={builder.registeredLeafIds}
+          game={builder.game}
+          onConfirm={(maxPly) => {
+            builder.bulkRegisterAtDepth(maxPly);
+            setShowBulkRegister(false);
+          }}
+          onCancel={() => setShowBulkRegister(false)}
+        />
+      ) : null}
+
+      {showSetPosition ? (
+        <SetPositionModal
+          hasMoves={gameHasMoves(builder.game)}
+          onConfirm={(fen, force) => {
+            const result = builder.setStartPosition(fen, force);
+            if (!result.ok) {
+              return;
+            }
+            setShowSetPosition(false);
+            boardAnnotations.clearAnnotations();
+          }}
+          onCancel={() => setShowSetPosition(false)}
+        />
+      ) : null}
+
+      {showCopyLine ? (
+        <CopyLineModal
+          defaultTargetId={builder.repertoireId}
+          defaultAttachNodeId={builder.currentNodeId}
+          onGraftedInBuilder={(game, attachNodeId) => {
+            builder.applyGraftedGame(game, attachNodeId);
+          }}
+          onComplete={() => setShowCopyLine(false)}
+          onCancel={() => setShowCopyLine(false)}
         />
       ) : null}
     </div>

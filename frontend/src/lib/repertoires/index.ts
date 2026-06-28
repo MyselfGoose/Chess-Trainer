@@ -88,6 +88,22 @@ export type { SuggestedChapter } from "./chapters";
 export { mergeRepertoires } from "./merge";
 export type { MergeRepertoiresOptions, MergeRepertoiresResult } from "./merge";
 export {
+  applyBulkRegister,
+  findLeavesAtMaxDepth,
+  mergeRegisteredLeaves,
+  previewBulkRegister,
+} from "./bulkRegister";
+export type { BulkRegisterPreview } from "./bulkRegister";
+export {
+  checkGraftFenMatch,
+  copyLineToGame,
+  CopyLineError,
+  previewCopyLineSan,
+  resolveSourceRootChildId,
+} from "./copyLine";
+export type { CopyLineRequest, GraftFenCheck } from "./copyLine";
+export { gameHasMoves, setGameStartFen } from "./setStartFen";
+export {
   bumpRepertoireVersion,
   DEFAULT_REPERTOIRE_META,
   isValidRepertoire,

@@ -187,6 +187,31 @@ The **Register line** button is enabled when:
 
 Registered lines appear in the side panel list. Click a line to jump to its final position. Use **Remove** to unregister a line.
 
+### Bulk register
+
+**Bulk register** registers every leaf line at depth ≤ N plies in one step:
+
+1. Click **Bulk register** in the builder sidebar.
+2. Set the max ply depth (preview shows how many lines will be added).
+3. Confirm — already-registered lines are skipped.
+
+### Set position (custom FEN)
+
+Use **Set position** in the builder header to start from a middlegame or study position instead of move 1:
+
+1. Paste a valid FEN string.
+2. If the tree already has moves, confirm the destructive reset.
+3. Play and register lines from the new starting position — study and training respect `startFen`.
+
+### Copy line between repertoires
+
+Graft a line from another repertoire onto a matching position:
+
+- **Builder:** **Import line** — attach at the current board position.
+- **Repertoire detail** (`/repertoires/[id]`): **Copy line** — pick source line and target attach position.
+
+The attach FEN must match the start of the source line; mismatches are blocked. Grafted lines are not auto-registered — register them manually or use bulk register.
+
 ### Undo move
 
 **Undo move** deletes the last move from the tree if:

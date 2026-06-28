@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { use, useCallback, useEffect, useState } from "react";
 
 import { ChapterManager } from "@/components/repertoires/ChapterManager";
+import { CopyLineModal } from "@/components/repertoires/CopyLineModal";
 import { DuplicateForkModal } from "@/components/repertoires/DuplicateForkModal";
 import { computeLineStats } from "@/lib/pgn";
 import {
@@ -28,6 +29,7 @@ export default function RepertoireDetailPage({
   const [tagInput, setTagInput] = useState("");
   const [tagError, setTagError] = useState<string | null>(null);
   const [showFork, setShowFork] = useState(false);
+  const [showCopyLine, setShowCopyLine] = useState(false);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is client-only
@@ -164,12 +166,21 @@ export default function RepertoireDetailPage({
                 Train
               </Link>
               {repertoire.source === "created" ? (
-                <Link
-                  href={`/repertoires/${repertoire.id}/edit`}
-                  className="rounded-lg bg-surface px-3 py-1.5 text-sm font-medium ring-1 ring-border hover:bg-background"
-                >
-                  Edit
-                </Link>
+                <>
+                  <Link
+                    href={`/repertoires/${repertoire.id}/edit`}
+                    className="rounded-lg bg-surface px-3 py-1.5 text-sm font-medium ring-1 ring-border hover:bg-background"
+                  >
+                    Edit
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setShowCopyLine(true)}
+                    className="rounded-lg bg-surface px-3 py-1.5 text-sm font-medium ring-1 ring-border hover:bg-background"
+                  >
+                    Copy line
+                  </button>
+                </>
               ) : (
                 <button
                   type="button"
@@ -243,6 +254,14 @@ export default function RepertoireDetailPage({
             router.push(`/repertoires/${newId}/edit`);
           }}
           onCancel={() => setShowFork(false)}
+        />
+      ) : null}
+
+      {showCopyLine ? (
+        <CopyLineModal
+          defaultTargetId={repertoire.id}
+          onComplete={() => setShowCopyLine(false)}
+          onCancel={() => setShowCopyLine(false)}
         />
       ) : null}
     </div>

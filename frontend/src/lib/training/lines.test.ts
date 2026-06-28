@@ -3,6 +3,7 @@ import type { Square } from "chess.js";
 
 import { parsePgnDatabase } from "@/lib/pgn/parse";
 import { createRepertoire } from "@/lib/repertoires/storage";
+import { setGameStartFen } from "@/lib/repertoires/setStartFen";
 import { applyMove, createEmptyStudyGame } from "@/lib/repertoires/treeBuilder";
 
 import {
@@ -74,6 +75,32 @@ describe("extractTrainingLines", () => {
     const lines = extractTrainingLines(repertoire);
     expect(lines).toHaveLength(1);
     expect(lines[0].leafNodeId).toBe(e5.nodeId);
+  });
+
+  it("uses custom startFen on training lines", () => {
+    const customFen =
+      "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2";
+    let game = createEmptyStudyGame("Custom start");
+    const setResult = setGameStartFen(game, customFen);
+    expect(setResult.ok).toBe(true);
+    if (!setResult.ok) {
+      return;
+    }
+    game = setResult.game;
+    const nf3 = applyMove(game, game.rootId, "g1" as Square, "f3" as Square)!;
+    game = nf3.game;
+
+    const repertoire = createRepertoire({
+      name: "Custom",
+      source: "created",
+      games: [game],
+      registeredLeafIds: [nf3.nodeId],
+    });
+
+    const lines = extractTrainingLines(repertoire);
+    expect(lines).toHaveLength(1);
+    expect(lines[0]?.startFen).toContain("4P3");
+    expect(lines[0]?.moves[0]?.san).toBe("Nf3");
   });
 });
 

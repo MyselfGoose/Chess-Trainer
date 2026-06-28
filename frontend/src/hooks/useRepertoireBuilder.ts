@@ -33,6 +33,10 @@ import {
   type Repertoire,
 } from "@/lib/repertoires";
 import {
+  applyBulkRegister,
+} from "@/lib/repertoires/bulkRegister";
+import { setGameStartFen } from "@/lib/repertoires/setStartFen";
+import {
   collapseEmptyBranches,
   findEmptyBranches,
 } from "@/lib/repertoires/treeMutations";
@@ -122,6 +126,13 @@ export interface UseRepertoireBuilderResult {
   saveAnnotationsToNode: (sessionShapes: BoardAnnotation[]) => void;
   hasUnsavedAnnotations: (sessionShapes: BoardAnnotation[]) => boolean;
   save: () => Repertoire | null;
+  repertoireId: string | undefined;
+  applyGraftedGame: (game: StudyGame, attachNodeId: string) => void;
+  setStartPosition: (
+    fen: string,
+    force: boolean,
+  ) => { ok: true } | { ok: false; reason: string };
+  bulkRegisterAtDepth: (maxPly: number) => void;
 }
 
 interface BuilderState {
@@ -669,6 +680,71 @@ export function useRepertoireBuilder(
     setIsDirty(true);
   }, []);
 
+  const applyGraftedGame = useCallback(
+    (graftedGame: StudyGame, attachNodeId: string) => {
+      pushUndoSnapshot();
+      bumpVersion();
+      syncNodeCounterFromGame(graftedGame);
+      const attachNode = graftedGame.nodes[attachNodeId];
+      const newChildId =
+        attachNode?.childIds[attachNode.childIds.length - 1] ?? attachNodeId;
+      setState((prev) => ({
+        ...prev,
+        game: graftedGame,
+        currentNodeId: newChildId,
+        tipNodeId: newChildId,
+      }));
+      setIsDirty(true);
+      setRegisterMessage("Line imported.");
+    },
+    [bumpVersion, pushUndoSnapshot],
+  );
+
+  const setStartPosition = useCallback(
+    (
+      fen: string,
+      force: boolean,
+    ): { ok: true } | { ok: false; reason: string } => {
+      const result = setGameStartFen(game, fen, { force });
+      if (!result.ok) {
+        setRegisterMessage(result.reason);
+        return result;
+      }
+      pushUndoSnapshot();
+      bumpVersion();
+      setState((prev) => ({
+        ...prev,
+        game: result.game,
+        currentNodeId: result.game.rootId,
+        tipNodeId: result.game.rootId,
+        registeredLeafIds: force ? [] : prev.registeredLeafIds,
+      }));
+      setIsDirty(true);
+      setRegisterMessage(null);
+      return { ok: true };
+    },
+    [bumpVersion, game, pushUndoSnapshot],
+  );
+
+  const bulkRegisterAtDepth = useCallback(
+    (maxPly: number) => {
+      const result = applyBulkRegister(game, registeredLeafIds, maxPly);
+      if (result.addedCount === 0) {
+        setRegisterMessage("No new lines to register at that depth.");
+        return;
+      }
+      pushUndoSnapshot();
+      setState((prev) => ({
+        ...prev,
+        registeredLeafIds: result.registeredLeafIds,
+      }));
+      setIsDirty(true);
+      setRegisterMessage(`Registered ${result.addedCount} lines.`);
+      playNotificationSound();
+    },
+    [game, pushUndoSnapshot, registeredLeafIds],
+  );
+
   const save = useCallback((): Repertoire | null => {
     if (!canSave) {
       return null;
@@ -803,5 +879,9 @@ export function useRepertoireBuilder(
     saveAnnotationsToNode,
     hasUnsavedAnnotations,
     save,
+    repertoireId,
+    applyGraftedGame,
+    setStartPosition,
+    bulkRegisterAtDepth,
   };
 }
