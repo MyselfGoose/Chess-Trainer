@@ -37,13 +37,13 @@ function MoveChoiceCard({
   const [expanded, setExpanded] = useState(false);
   const nagText = formatAnnotations(choice.node.annotations);
   const comment = choice.node.comment;
-  const showExpand = comment && comment.length > 120;
+  const showExpand = Boolean(comment && comment.length > 80);
 
   return (
     <button
       type="button"
       onClick={onSelect}
-      className={`w-full rounded-lg border p-3 text-left transition ${
+      className={`min-h-11 w-full rounded-lg border p-2.5 text-left transition ${
         isSelected
           ? "border-green-600 bg-green-50 ring-1 ring-green-600"
           : "border-zinc-200 bg-white hover:border-green-400 hover:bg-green-50/50"
@@ -75,8 +75,8 @@ function MoveChoiceCard({
 
       {comment ? (
         <p
-          className={`mt-2 break-words text-sm leading-relaxed text-zinc-600 ${
-            expanded ? "" : "line-clamp-3"
+          className={`mt-1.5 break-words text-sm leading-snug text-zinc-600 ${
+            expanded ? "" : "line-clamp-2"
           }`}
         >
           {comment}
@@ -134,7 +134,7 @@ export function PgnMoveChoices({
         {turnLabel} to move — {choices.length}{" "}
         {choices.length === 1 ? "option" : "options"}
       </p>
-      <div className="mt-2 flex flex-col gap-2">
+      <div className="mt-2 flex flex-col gap-1.5">
         {choices.map((choice) => (
           <MoveChoiceCard
             key={choice.node.id}

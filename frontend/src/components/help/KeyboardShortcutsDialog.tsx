@@ -51,11 +51,38 @@ function isEditableTarget(target: EventTarget | null): boolean {
   );
 }
 
+function canRestoreFocus(element: Element | null): element is HTMLElement {
+  if (!(element instanceof HTMLElement)) {
+    return false;
+  }
+  if (element === document.body || element === document.documentElement) {
+    return false;
+  }
+  if (!document.contains(element)) {
+    return false;
+  }
+  if (element.hasAttribute("disabled")) {
+    return false;
+  }
+  return true;
+}
+
 export function KeyboardShortcutsDialog() {
   const [open, setOpen] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
 
-  const close = useCallback(() => setOpen(false), []);
+  const close = useCallback(() => {
+    setOpen(false);
+  }, []);
+
+  const openDialog = useCallback(() => {
+    previouslyFocusedRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    setOpen(true);
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -64,27 +91,43 @@ export function KeyboardShortcutsDialog() {
           return;
         }
         event.preventDefault();
-        setOpen((current) => !current);
+        if (open) {
+          close();
+        } else {
+          openDialog();
+        }
+        return;
       }
       if (event.key === "Escape" && open) {
+        event.preventDefault();
         close();
       }
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [close, open]);
+  }, [close, open, openDialog]);
 
   useEffect(() => {
     if (!open) {
-      return;
-    }
-    const previouslyFocused = document.activeElement;
-    dialogRef.current?.focus();
-    return () => {
-      if (previouslyFocused instanceof HTMLElement) {
-        previouslyFocused.focus();
+      const restoreTarget = previouslyFocusedRef.current;
+      previouslyFocusedRef.current = null;
+      if (!canRestoreFocus(restoreTarget)) {
+        return;
       }
-    };
+      const frame = window.requestAnimationFrame(() => {
+        try {
+          restoreTarget.focus({ preventScroll: true });
+        } catch {
+          // Ignore focus failures on detached or non-focusable nodes.
+        }
+      });
+      return () => window.cancelAnimationFrame(frame);
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      dialogRef.current?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [open]);
 
   if (!open) {

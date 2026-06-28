@@ -9,7 +9,7 @@ import type { PromotionPiece } from "@/lib/chess/types";
 import {
   loadOrientationPreferenceOrDefault,
   saveOrientationPreference,
-  TRAINING_ORIENTATION_KEY,
+  trainingOrientationKey,
 } from "@/lib/chess/orientationPreference";
 import { getRepertoire } from "@/lib/repertoires";
 import type { BoardOrientation } from "@/lib/repertoires/types";
@@ -187,7 +187,10 @@ export function useTrainingSession({
     setEngineInput(input);
     setEngineState(initial);
     setBoardOrientation(
-      loadOrientationPreferenceOrDefault(TRAINING_ORIENTATION_KEY, userColor),
+      loadOrientationPreferenceOrDefault(
+        trainingOrientationKey(userColor),
+        userColor,
+      ),
     );
     setIsHydrated(true);
     /* eslint-enable react-hooks/set-state-in-effect */
@@ -261,7 +264,10 @@ export function useTrainingSession({
 
   useEffect(() => {
     if (isHydrated && userColor) {
-      saveOrientationPreference(TRAINING_ORIENTATION_KEY, boardOrientation);
+      saveOrientationPreference(
+        trainingOrientationKey(userColor),
+        boardOrientation,
+      );
     }
   }, [boardOrientation, isHydrated, userColor]);
 

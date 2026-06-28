@@ -41,6 +41,10 @@ export function saveOrientationPreference(
   localStorage.setItem(key, orientation);
 }
 
+export function trainingOrientationKey(color: BoardOrientation): string {
+  return `${TRAINING_ORIENTATION_KEY}:${color}`;
+}
+
 export function toggleOrientation(
   orientation: BoardOrientation,
 ): BoardOrientation {

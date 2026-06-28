@@ -10,7 +10,8 @@ import {
   MoveNavigationHints,
 } from "@/components/chess/MoveNavigationBindings";
 import { PromotionDialog } from "@/components/chess/PromotionDialog";
-import { PgnStudyPanel } from "@/components/pgn/PgnStudyPanel";
+import { PgnStudyMovesPanel } from "@/components/pgn/PgnStudyMovesPanel";
+import { PgnStudyToolsPanel } from "@/components/pgn/PgnStudyToolsPanel";
 import { EmptyState } from "@/components/ui/EmptyState";
 import type { PromotionPiece } from "@/lib/chess/types";
 import { annotationsFromPgnNode } from "@/lib/chess/annotations";
@@ -46,7 +47,7 @@ function FlipBoardButton({
 
 function BoardFrame({ children }: { children: ReactNode }) {
   return (
-    <div className="board-fit-container">
+    <div className="board-fit-container mx-auto w-full max-w-[min(100%,720px)]">
       <div className="board-fit-square rounded-sm p-1 shadow-lg ring-1 ring-black/10">
         {children}
       </div>
@@ -126,8 +127,7 @@ export default function StudyPage({
     return findGaps(study.repertoire);
   }, [study.repertoire]);
 
-  const trainColor =
-    study.turnLabel === "White" ? "white" : "black";
+  const trainColor = study.turnLabel === "White" ? "white" : "black";
   const trainFromHereHref =
     study.currentNodeId && study.repertoire
       ? `/training/${study.repertoire.id}?anchor=${study.currentNodeId}&color=${trainColor}`
@@ -161,26 +161,67 @@ export default function StudyPage({
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-zinc-100 lg:flex-row">
-      <section className="flex min-h-0 min-w-0 flex-[1.2] flex-col p-3 sm:p-4 lg:flex-1">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-zinc-100 lg:grid lg:grid-cols-[minmax(13rem,17rem)_minmax(0,1fr)_minmax(16rem,22rem)]">
+      {/* Left: navigation & tools */}
+      <div className="order-2 hidden min-h-0 border-r border-zinc-200 bg-white lg:order-1 lg:block">
+        <PgnStudyToolsPanel
+          games={study.repertoire.games}
+          selectedGameIndex={study.selectedGameIndex}
+          currentGame={study.currentGame}
+          currentNodeId={study.currentNodeId}
+          currentPath={study.currentPath}
+          lineStats={study.lineStats}
+          repertoireName={study.repertoire.name}
+          preparationGaps={preparationGaps}
+          onSelectGame={study.selectGame}
+          onSelectNode={study.goToNode}
+          onNavigateToGap={(nodeId) => study.goToNode(nodeId)}
+          onSelectSearchLine={(leafNodeId) => study.goToNode(leafNodeId)}
+        />
+      </div>
+
+      {/* Mobile: collapsible tools */}
+      <details className="order-2 border-b border-zinc-200 bg-white lg:hidden">
+        <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-zinc-700">
+          Search, gaps & game info
+        </summary>
+        <div className="max-h-[40dvh] overflow-y-auto border-t border-zinc-100">
+          <PgnStudyToolsPanel
+            games={study.repertoire.games}
+            selectedGameIndex={study.selectedGameIndex}
+            currentGame={study.currentGame}
+            currentNodeId={study.currentNodeId}
+            currentPath={study.currentPath}
+            lineStats={study.lineStats}
+            repertoireName={study.repertoire.name}
+            preparationGaps={preparationGaps}
+            onSelectGame={study.selectGame}
+            onSelectNode={study.goToNode}
+            onNavigateToGap={(nodeId) => study.goToNode(nodeId)}
+            onSelectSearchLine={(leafNodeId) => study.goToNode(leafNodeId)}
+          />
+        </div>
+      </details>
+
+      {/* Center: board */}
+      <section className="order-1 flex min-h-0 min-w-0 flex-col p-3 sm:p-4 lg:order-2">
         <header className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-3">
-          <div className="min-w-0">
-            <h1 className="truncate text-lg font-semibold text-zinc-900 sm:text-xl">
+          <div className="min-w-0 lg:hidden">
+            <h1 className="truncate text-lg font-semibold text-zinc-900">
               {study.repertoire.name}
             </h1>
-            <p className="text-xs text-zinc-600 sm:text-sm">
-              Study mode — choose your next repertoire move
-            </p>
           </div>
-          <FlipBoardButton orientation={study.orientation} onFlip={flipBoard} />
-          {trainFromHereHref ? (
-            <Link
-              href={trainFromHereHref}
-              className="shrink-0 rounded-md bg-green-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-800"
-            >
-              Train from here
-            </Link>
-          ) : null}
+          <div className="ml-auto flex shrink-0 flex-wrap items-center gap-2">
+            <FlipBoardButton orientation={study.orientation} onFlip={flipBoard} />
+            {trainFromHereHref ? (
+              <Link
+                href={trainFromHereHref}
+                className="rounded-md bg-green-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-800"
+              >
+                Train from here
+              </Link>
+            ) : null}
+          </div>
         </header>
 
         {transpositionLabels.length > 0 ? (
@@ -189,24 +230,26 @@ export default function StudyPage({
           </div>
         ) : null}
 
-        <BoardFrame>
-          <div ref={boardNavRef} className="h-full w-full">
-            <ChessBoard
-              mode="study"
-              fen={study.boardFen}
-              lastMove={study.boardLastMove}
-              repertoireDests={study.repertoireDests}
-              onRepertoireMove={handleStudyMove}
-              orientation={study.orientation}
-              annotations={{
-                shapes: boardAnnotations.shapes,
-                autoShapes: pgnAutoShapes,
-                onChange: boardAnnotations.annotations.onChange,
-                enabled: studyPromotion === null,
-              }}
-            />
-          </div>
-        </BoardFrame>
+        <div className="flex min-h-0 flex-1 flex-col justify-center">
+          <BoardFrame>
+            <div ref={boardNavRef} className="h-full w-full">
+              <ChessBoard
+                mode="study"
+                fen={study.boardFen}
+                lastMove={study.boardLastMove}
+                repertoireDests={study.repertoireDests}
+                onRepertoireMove={handleStudyMove}
+                orientation={study.orientation}
+                annotations={{
+                  shapes: boardAnnotations.shapes,
+                  autoShapes: pgnAutoShapes,
+                  onChange: boardAnnotations.annotations.onChange,
+                  enabled: studyPromotion === null,
+                }}
+              />
+            </div>
+          </BoardFrame>
+        </div>
         <MoveNavigationHints />
         <MoveNavigationBindings
           navigation={study.navigation}
@@ -215,31 +258,20 @@ export default function StudyPage({
         />
       </section>
 
-      <aside className="flex h-[42dvh] min-h-0 w-full min-w-0 shrink-0 flex-col border-t border-zinc-200 bg-white lg:h-full lg:w-[min(100%,26rem)] lg:max-w-md lg:flex-1 lg:shrink-0 lg:border-l lg:border-t-0">
-        <PgnStudyPanel
-          games={study.repertoire.games}
-          selectedGameIndex={study.selectedGameIndex}
-          currentGame={study.currentGame}
-          currentNodeId={study.currentNodeId}
-          currentPath={study.currentPath}
-          availableMoves={study.availableMoves}
-          turnLabel={study.turnLabel}
-          isAtLineEnd={study.isAtLineEnd}
-          lineStats={study.lineStats}
-          repertoireName={study.repertoire.name}
-          preparationGaps={preparationGaps}
-          onNavigateToGap={(nodeId) => {
-            study.goToNode(nodeId);
-          }}
-          onSelectSearchLine={(leafNodeId) => {
-            study.goToNode(leafNodeId);
-          }}
-          onSelectGame={study.selectGame}
-          onSelectNode={study.goToNode}
-          onSelectChoice={study.selectChoice}
-          onBack={study.goBack}
-        />
-      </aside>
+      {/* Right: comments & move choices */}
+      <div className="order-3 flex min-h-0 border-t border-zinc-200 bg-white lg:h-full lg:max-h-none lg:border-l lg:border-t-0">
+        <div className="flex h-[min(52dvh,100%)] min-h-0 w-full lg:h-full lg:max-h-none">
+          <PgnStudyMovesPanel
+            currentGame={study.currentGame}
+            currentNodeId={study.currentNodeId}
+            availableMoves={study.availableMoves}
+            turnLabel={study.turnLabel}
+            isAtLineEnd={study.isAtLineEnd}
+            onSelectChoice={study.selectChoice}
+            onBack={study.goBack}
+          />
+        </div>
+      </div>
 
       {studyPromotion ? (
         <PromotionDialog
