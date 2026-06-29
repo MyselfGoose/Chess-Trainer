@@ -3,6 +3,12 @@ import type { TrainingColor } from "./types";
 export type TrainingMode = "learn" | "drill" | "test" | "survival";
 export type OpponentPolicy = "mainline" | "random" | "weighted";
 
+export interface PlyRange {
+  /** Inclusive index into line.moves (all plies, 0-based). */
+  from: number;
+  to: number;
+}
+
 export interface TrainingSessionConfig {
   repertoireId: string;
   userColor: TrainingColor;
@@ -18,6 +24,14 @@ export interface TrainingSessionConfig {
   showCommentsAfterLine: boolean;
   soundEnabled: boolean;
   opponentPolicy: OpponentPolicy;
+  /** Slice each line at last recorded failure ply. */
+  drillFromFailure?: boolean;
+  /** Train only moves within this ply range (per line). */
+  plyRange?: PlyRange;
+  /** Multi-repertoire mixed session (length >= 2). */
+  repertoireIds?: string[];
+  /** Interleave lines across openings when repertoireIds.length > 1. */
+  interleaved?: boolean;
 }
 
 function isTrainingColor(value: unknown): value is TrainingColor {
@@ -40,6 +54,19 @@ function isOpponentPolicy(value: unknown): value is OpponentPolicy {
 function isStringArray(value: unknown): value is string[] {
   return (
     Array.isArray(value) && value.every((item) => typeof item === "string")
+  );
+}
+
+function isPlyRange(value: unknown): value is PlyRange {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const record = value as Record<string, unknown>;
+  return (
+    typeof record.from === "number" &&
+    typeof record.to === "number" &&
+    Number.isInteger(record.from) &&
+    Number.isInteger(record.to)
   );
 }
 
@@ -77,6 +104,27 @@ function validateConfig(value: unknown): TrainingSessionConfig | null {
   ) {
     return null;
   }
+  if (
+    record.drillFromFailure !== undefined &&
+    typeof record.drillFromFailure !== "boolean"
+  ) {
+    return null;
+  }
+  if (record.plyRange !== undefined && !isPlyRange(record.plyRange)) {
+    return null;
+  }
+  if (
+    record.repertoireIds !== undefined &&
+    !isStringArray(record.repertoireIds)
+  ) {
+    return null;
+  }
+  if (
+    record.interleaved !== undefined &&
+    typeof record.interleaved !== "boolean"
+  ) {
+    return null;
+  }
   return {
     repertoireId: record.repertoireId,
     userColor: record.userColor,
@@ -90,6 +138,13 @@ function validateConfig(value: unknown): TrainingSessionConfig | null {
     opponentPolicy: isOpponentPolicy(record.opponentPolicy)
       ? record.opponentPolicy
       : "mainline",
+    drillFromFailure:
+      record.drillFromFailure === true ? true : undefined,
+    plyRange: isPlyRange(record.plyRange) ? record.plyRange : undefined,
+    repertoireIds: isStringArray(record.repertoireIds)
+      ? record.repertoireIds
+      : undefined,
+    interleaved: record.interleaved === false ? false : undefined,
   };
 }
 

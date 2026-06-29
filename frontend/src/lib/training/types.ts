@@ -6,9 +6,12 @@ export type TrainingPhase = "active" | "lineFeedback" | "summary";
 
 export interface TrainingLine {
   id: string;
+  repertoireId: string;
   gameIndex: number;
   leafNodeId: string;
   startFen: string;
+  /** Parent of moves[0] when line starts mid-path (drill / ply range). */
+  startParentNodeId?: string;
   moves: StudyNode[];
   label: string;
 }
@@ -17,6 +20,7 @@ export interface TrainingLineResult {
   lineId: string;
   label: string;
   passed: boolean;
+  failedAtPly?: number;
   failedAtSan?: string;
   expectedSan?: string;
   userMovesPlayed: number;
@@ -31,6 +35,7 @@ export interface TrainingSkippedLine {
 export interface TrainingSessionSummary {
   repertoireId: string;
   repertoireName: string;
+  repertoireNames?: string[];
   userColor: TrainingColor;
   startedAt: string;
   finishedAt: string;

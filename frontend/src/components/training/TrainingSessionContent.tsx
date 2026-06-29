@@ -35,7 +35,13 @@ function resolveTrainingConfig(
 ): TrainingSessionConfig | null {
   if (configParam) {
     const decoded = decodeTrainingConfig(configParam);
-    if (decoded && decoded.repertoireId === repertoireId) {
+    if (!decoded) {
+      return null;
+    }
+    if (decoded.repertoireId === repertoireId) {
+      return decoded;
+    }
+    if (decoded.repertoireIds?.includes(repertoireId)) {
       return decoded;
     }
     return null;
@@ -208,7 +214,13 @@ export function TrainingSessionContent({
             <h1 className="truncate text-lg font-semibold text-foreground">
               {training.repertoireName}
             </h1>
-            <p className="text-xs text-muted-foreground">{training.lineProgressLabel}</p>
+            <p className="text-xs text-muted-foreground">
+              {training.isMixedSession
+                ? `Mixed session · ${training.repertoireNames.length} repertoires`
+                : null}
+              {training.isMixedSession ? " · " : null}
+              {training.lineProgressLabel}
+            </p>
           </div>
         </header>
         <TrainingBoard

@@ -141,6 +141,7 @@ describe("training engine", () => {
     expect(state.phase).toBe("lineFeedback");
     expect(state.feedback?.passed).toBe(false);
     expect(state.results[0]?.expectedSan).toBe(firstWhiteMove?.san);
+    expect(state.results[0]?.failedAtPly).toBe(0);
   });
 
   it("reaches summary after all lines are completed", () => {

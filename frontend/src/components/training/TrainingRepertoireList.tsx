@@ -39,6 +39,14 @@ export function TrainingRepertoireList() {
     ? sortedRepertoires.filter((repertoire) => getDueLines(repertoire.id).length > 0)
     : sortedRepertoires;
 
+  const canMix = repertoires.filter((repertoire) => {
+    const canTrain =
+      repertoire.source === "imported"
+        ? repertoire.games.length > 0
+        : repertoire.registeredLeafIds.length > 0;
+    return canTrain;
+  }).length >= 2;
+
   if (!isHydrated) {
     return (
       <p className="text-center text-sm text-muted-foreground">Loading repertoires…</p>
@@ -66,6 +74,15 @@ export function TrainingRepertoireList() {
 
   return (
     <div>
+      {canMix ? (
+        <Link
+          href="/training/mixed"
+          className="mb-4 block rounded-xl bg-accent px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-accent-hover"
+        >
+          Mixed session — train across repertoires
+        </Link>
+      ) : null}
+
       <label className="mb-4 flex items-center gap-2 text-sm text-foreground/90">
         <input
           type="checkbox"

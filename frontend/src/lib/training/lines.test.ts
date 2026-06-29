@@ -45,6 +45,17 @@ beforeEach(() => {
 });
 
 describe("extractTrainingLines", () => {
+  it("sets repertoireId on extracted lines", () => {
+    const parsed = parsePgnDatabase(VARIATION_PGN);
+    const repertoire = createRepertoire({
+      name: "Test",
+      source: "imported",
+      games: parsed.games,
+    });
+    const lines = extractTrainingLines(repertoire);
+    expect(lines.every((line) => line.repertoireId === repertoire.id)).toBe(true);
+  });
+
   it("extracts all leaf lines from imported repertoires", () => {
     const parsed = parsePgnDatabase(VARIATION_PGN);
     const repertoire = createRepertoire({

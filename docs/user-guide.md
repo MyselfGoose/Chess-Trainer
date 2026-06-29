@@ -380,7 +380,7 @@ Imported repertoires show **Duplicate & Edit** in the study header — same flow
 
 ## Opening training
 
-**Routes:** `/training`, `/training/[id]`, `/training/[id]/session`
+**Routes:** `/training`, `/training/mixed`, `/training/[id]`, `/training/[id]/session`
 
 Drill your repertoire lines against an auto-playing opponent.
 
@@ -391,6 +391,7 @@ Lists all repertoires with:
 - Total trainable lines
 - Lines per color (White / Black)
 - Last trained date and pass rate
+- **Mixed session** — train across two or more repertoires in one interleaved session (`/training/mixed`)
 
 ### Setup
 
@@ -447,6 +448,24 @@ Session summaries are stored locally (last 50 sessions). Stats on repertoire car
 Lines are filtered by your chosen color — only lines where you have moves to play are included.
 
 Prep sessions can pre-select lines via the `?lines=` URL parameter (comma-separated line IDs). A banner shows how many lines were preselected.
+
+Weak-line links from the dashboard use `?weak=` to preselect struggling lines. Add `&drill=failure` to start a **failure-point drill** from the move before your typical mistake.
+
+### Failure-point drill
+
+When you fail a line, the app records **which ply** you missed (`failedAtPly`). After the session:
+
+- **Drill failure points** on the summary retrains only the suffix from one move before the mistake.
+- On the repertoire **dashboard**, weak lines with a known failure ply show **Drill mistake**.
+- In setup, enable **Advanced → Drill from last failure point**, or arrive via `?drill=failure`.
+
+### Micro-lines (ply range)
+
+In training setup, open **Advanced → Limit to ply range** to drill only a segment of each line (e.g. plies 8–12). The board opens at the range start position; invalid ranges block starting the session.
+
+### Mixed / interleaved training
+
+From the training hub, **Mixed session** lets you pick two or more repertoires, your color, and a line cap. Lines are interleaved across openings when possible so you do not drill the same opening back-to-back. Mastery is still stored per repertoire.
 
 ---
 

@@ -50,6 +50,19 @@ describe("mastery storage", () => {
     expect(fail.lastResult).toBe("fail");
   });
 
+  it("records fail metadata and clears on pass", () => {
+    const fail = recordLineResult("rep-1", "0:meta", false, undefined, {
+      failedAtPly: 5,
+      failedAtSan: "Nf3",
+    });
+    expect(fail.failedAtPly).toBe(5);
+    expect(fail.failedAtSan).toBe("Nf3");
+
+    const pass = recordLineResult("rep-1", "0:meta", true);
+    expect(pass.failedAtPly).toBeUndefined();
+    expect(pass.failedAtSan).toBeUndefined();
+  });
+
   it("filters due lines by UTC date", () => {
     const trained = recordLineResult("rep-1", "0:due", true, "2025-06-01T12:00:00.000Z");
     expect(trained.dueAt).toBe("2025-06-02");

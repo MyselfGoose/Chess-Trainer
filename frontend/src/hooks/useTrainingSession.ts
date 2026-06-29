@@ -11,23 +11,18 @@ import {
   saveOrientationPreference,
   trainingOrientationKey,
 } from "@/lib/chess/orientationPreference";
+import { loadEcoData } from "@/lib/openings/lookup";
 import { getRepertoire } from "@/lib/repertoires";
 import type { BoardOrientation } from "@/lib/repertoires/types";
 import {
   advanceFromFeedback,
   applyNextOpponentMove,
-  applySessionLineLimit,
   countUserMovesInLine,
   createTrainingEngine,
   endTrainingEarly,
-  extractTrainingLines,
-  filterLinesForColor,
-  filterLinesFromAnchorForGame,
   getCurrentLine,
-  getMasteryForRepertoire,
   getTrainingPositionContext,
   hasPendingOpponentAnimation,
-  prioritizeLines,
   recordLineResult,
   saveTrainingSession,
   startLineWalk,
@@ -41,6 +36,7 @@ import {
   type TrainingSessionConfig,
   type TrainingSessionSummary,
 } from "@/lib/training";
+import { prepareTrainingSessionLines } from "@/lib/training/sessionLines";
 import { playChessMoveSound, playFailSound, playNotificationSound, playPassSound } from "@/lib/training/sounds";
 
 const OPPONENT_MOVE_DELAY_MS = 350;
@@ -53,16 +49,20 @@ function isValidColor(value: string | null): value is "white" | "black" {
 function buildEngineInput(
   config: TrainingSessionConfig,
   repertoireName: string,
+  repertoireNames: string[],
   lines: CreateTrainingEngineInput["lines"],
   games: CreateTrainingEngineInput["games"],
+  gamesByRepertoire: Map<string, CreateTrainingEngineInput["games"]>,
   startedAt: string,
 ): CreateTrainingEngineInput {
   return {
     repertoireId: config.repertoireId,
     repertoireName,
+    repertoireNames: repertoireNames.length > 1 ? repertoireNames : undefined,
     userColor: config.userColor,
     lines,
     games,
+    gamesByRepertoire,
     startedAt,
     mode: config.mode,
     showCommentsAfterLine: config.showCommentsAfterLine,
@@ -77,6 +77,8 @@ export interface UseTrainingSessionOptions {
 export interface UseTrainingSessionResult {
   isHydrated: boolean;
   repertoireName: string | null;
+  repertoireNames: string[];
+  isMixedSession: boolean;
   notFound: boolean;
   noLines: boolean;
   phase: TrainingPhase;
@@ -105,7 +107,6 @@ export interface UseTrainingSessionResult {
 export function useTrainingSession({
   config,
 }: UseTrainingSessionOptions): UseTrainingSessionResult {
-  const repertoireId = config?.repertoireId ?? "";
   const userColor = config?.userColor ?? null;
 
   const [isHydrated, setIsHydrated] = useState(false);
@@ -116,6 +117,7 @@ export function useTrainingSession({
     null,
   );
   const [repertoireName, setRepertoireName] = useState<string | null>(null);
+  const [repertoireNames, setRepertoireNames] = useState<string[]>([]);
   const [notFound, setNotFound] = useState(false);
   const [noLines, setNoLines] = useState(false);
   const [boardOrientation, setBoardOrientation] = useState<BoardOrientation>("white");
@@ -131,75 +133,71 @@ export function useTrainingSession({
       return;
     }
 
-    const repertoire = getRepertoire(repertoireId);
-    if (!repertoire) {
+    const repertoireIds =
+      config.repertoireIds && config.repertoireIds.length > 0
+        ? config.repertoireIds
+        : [config.repertoireId];
+
+    const repertoires = repertoireIds
+      .map((id) => getRepertoire(id))
+      .filter((entry) => entry !== null);
+
+    if (repertoires.length !== repertoireIds.length) {
       setNotFound(true);
       setIsHydrated(true);
       return;
     }
 
-    let allLines = filterLinesForColor(
-      extractTrainingLines(repertoire),
-      userColor,
-    );
+    let cancelled = false;
 
-    if (config.anchorLeafNodeId) {
-      allLines = filterLinesFromAnchorForGame(
-        allLines,
-        repertoire.games,
-        config.anchorLeafNodeId,
+    void (async () => {
+      const ecoEntries = await loadEcoData().catch(() => []);
+      if (cancelled) {
+        return;
+      }
+
+      const prepared = prepareTrainingSessionLines(repertoires, config, ecoEntries);
+      if (!prepared) {
+        setRepertoireName(
+          repertoires.length > 1
+            ? `Mixed (${repertoires.length} repertoires)`
+            : (repertoires[0]?.name ?? null),
+        );
+        setRepertoireNames(repertoires.map((entry) => entry.name));
+        setNoLines(true);
+        setIsHydrated(true);
+        return;
+      }
+
+      const input = buildEngineInput(
+        config,
+        prepared.repertoireName,
+        prepared.repertoireNames,
+        prepared.lines,
+        prepared.games,
+        prepared.gamesByRepertoire,
+        startedAtRef.current,
       );
-    }
+      const initial = startLineWalk(createTrainingEngine(input), input);
 
-    if (config.lineIds.length > 0) {
-      const ids = new Set(config.lineIds);
-      allLines = allLines.filter((line) => ids.has(line.id));
-    }
-
-    const masteryMap = new Map(
-      getMasteryForRepertoire(repertoireId).map((entry) => [
-        entry.lineId,
-        entry,
-      ]),
-    );
-    const prioritized =
-      masteryMap.size > 0
-        ? prioritizeLines(allLines, masteryMap)
-        : allLines;
-    const lines = applySessionLineLimit(
-      prioritized,
-      config.maxLines,
-      masteryMap.size === 0,
-    );
-
-    if (lines.length === 0) {
-      setRepertoireName(repertoire.name);
-      setNoLines(true);
+      setRepertoireName(prepared.repertoireName);
+      setRepertoireNames(prepared.repertoireNames);
+      setEngineInput(input);
+      setEngineState(initial);
+      setBoardOrientation(
+        loadOrientationPreferenceOrDefault(
+          trainingOrientationKey(userColor),
+          userColor,
+        ),
+      );
       setIsHydrated(true);
-      return;
-    }
+    })();
 
-    const input = buildEngineInput(
-      config,
-      repertoire.name,
-      lines,
-      repertoire.games,
-      startedAtRef.current,
-    );
-    const initial = startLineWalk(createTrainingEngine(input), input);
-
-    setRepertoireName(repertoire.name);
-    setEngineInput(input);
-    setEngineState(initial);
-    setBoardOrientation(
-      loadOrientationPreferenceOrDefault(
-        trainingOrientationKey(userColor),
-        userColor,
-      ),
-    );
-    setIsHydrated(true);
+    return () => {
+      cancelled = true;
+    };
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [config, repertoireId, userColor]);
+  }, [config, userColor]);
 
   useEffect(() => {
     if (animationTimerRef.current) {
@@ -249,8 +247,16 @@ export function useTrainingSession({
       config
     ) {
       const result = engineState.results[engineState.results.length - 1];
-      if (result && !recordedResultsRef.current.has(result.lineId)) {
-        recordLineResult(repertoireId, result.lineId, result.passed);
+      const line = getCurrentLine(engineState);
+      if (
+        result &&
+        line &&
+        !recordedResultsRef.current.has(result.lineId)
+      ) {
+        recordLineResult(line.repertoireId, result.lineId, result.passed, undefined, {
+          failedAtPly: result.failedAtPly,
+          failedAtSan: result.failedAtSan,
+        });
         recordedResultsRef.current.add(result.lineId);
       }
       if (config.soundEnabled) {
@@ -261,7 +267,7 @@ export function useTrainingSession({
         }
       }
     }
-  }, [config, engineState?.feedback, engineState?.phase, engineState?.results, repertoireId]);
+  }, [config, engineState, engineState?.feedback, engineState?.phase, engineState?.results]);
 
   useEffect(() => {
     if (
@@ -289,6 +295,7 @@ export function useTrainingSession({
   const phase = engineState?.phase ?? "active";
   const boardFen = engineState?.boardFen ?? "";
   const orientation = boardOrientation;
+  const isMixedSession = repertoireNames.length > 1;
 
   const movableDests = useMemo(() => {
     if (!engineState?.waitingForUser || !boardFen) {
@@ -455,6 +462,8 @@ export function useTrainingSession({
   return {
     isHydrated,
     repertoireName,
+    repertoireNames,
+    isMixedSession,
     notFound,
     noLines,
     phase,

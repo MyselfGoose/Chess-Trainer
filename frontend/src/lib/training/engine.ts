@@ -37,9 +37,11 @@ export interface TrainingEngineState {
 export interface CreateTrainingEngineInput {
   repertoireId: string;
   repertoireName: string;
+  repertoireNames?: string[];
   userColor: TrainingColor;
   lines: TrainingLine[];
   games: StudyGame[];
+  gamesByRepertoire?: Map<string, StudyGame[]>;
   startedAt: string;
   mode: TrainingMode;
   showCommentsAfterLine: boolean;
@@ -47,6 +49,13 @@ export interface CreateTrainingEngineInput {
 }
 
 function getGameForLine(input: CreateTrainingEngineInput, line: TrainingLine): StudyGame {
+  if (input.gamesByRepertoire) {
+    const games = input.gamesByRepertoire.get(line.repertoireId);
+    const game = games?.[line.gameIndex];
+    if (game) {
+      return game;
+    }
+  }
   return input.games[line.gameIndex];
 }
 
@@ -61,11 +70,13 @@ function buildLineResult(
   userMovesPlayed: number,
   failedAtSan?: string,
   expectedSan?: string,
+  failedAtPly?: number,
 ): TrainingLineResult {
   return {
     lineId: line.id,
     label: line.label,
     passed,
+    failedAtPly: passed ? undefined : failedAtPly,
     failedAtSan,
     expectedSan,
     userMovesPlayed,
@@ -87,6 +98,7 @@ function buildSummary(
   return {
     repertoireId: input.repertoireId,
     repertoireName: input.repertoireName,
+    repertoireNames: input.repertoireNames,
     userColor: input.userColor,
     startedAt: input.startedAt,
     finishedAt: new Date().toISOString(),
@@ -110,10 +122,12 @@ function initialLineState(
   | "userMovesPlayedInLine"
   | "isAnimatingOpponent"
 > {
+  const game = getGameForLine(input, line);
+  const parentId = line.startParentNodeId ?? getRootId(game);
   return {
     boardFen: line.startFen,
     boardLastMove: null,
-    currentParentNodeId: getRootId(getGameForLine(input, line)),
+    currentParentNodeId: parentId,
     moveIndex: 0,
     waitingForUser: false,
     userMovesPlayedInLine: 0,
@@ -416,6 +430,7 @@ function completeLineFailed(
     state.userMovesPlayedInLine,
     playedSan,
     expectedSan,
+    state.moveIndex,
   );
 
   return {

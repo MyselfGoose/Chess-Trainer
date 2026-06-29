@@ -46,6 +46,7 @@ function lineFromLeaf(
   }
   return {
     id: `${gameIndex}:${leafNodeId}`,
+    repertoireId: "",
     gameIndex,
     leafNodeId,
     startFen: game.startFen,
@@ -74,7 +75,7 @@ export function extractTrainingLines(repertoire: Repertoire): TrainingLine[] {
     for (const leafId of leafIds) {
       const line = lineFromLeaf(game, gameIndex, leafId);
       if (line) {
-        lines.push(line);
+        lines.push({ ...line, repertoireId: repertoire.id });
       }
     }
   });

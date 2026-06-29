@@ -4,7 +4,7 @@ export {
   decodeTrainingConfig,
   encodeTrainingConfig,
 } from "./config";
-export type { TrainingMode, OpponentPolicy, TrainingSessionConfig } from "./config";
+export type { TrainingMode, OpponentPolicy, TrainingSessionConfig, PlyRange } from "./config";
 export {
   advanceFromFeedback,
   applyNextOpponentMove,
@@ -68,6 +68,25 @@ export {
   utcDateString,
 } from "./mastery";
 export type { LineMastery, MasteryLevel } from "./mastery";
+export {
+  applyFailureDrillToLines,
+  buildFailureDrillLine,
+  failurePlyFromMastery,
+  failurePlyFromResult,
+  linesWithFailurePly,
+} from "./failureDrill";
+export {
+  applyPlyRangeToLines,
+  countLinesAfterPlyRange,
+  sliceLineToPlyRange,
+  userMovePlyIndices,
+} from "./microLines";
+export {
+  collectLinesForRepertoires,
+  defaultOpeningKey,
+  interleaveLines,
+} from "./interleaved";
+export { prepareTrainingSessionLines } from "./sessionLines";
 export {
   computeReadinessBreakdown,
   computeReadinessScore,

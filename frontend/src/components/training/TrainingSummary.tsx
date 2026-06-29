@@ -5,13 +5,29 @@ import { useRouter } from "next/navigation";
 
 import {
   computePassRateTrend,
+  createDefaultTrainingConfig,
+  encodeTrainingConfig,
   getTrainingHistory,
+  linesWithFailurePly,
   type TrainingSessionSummary,
 } from "@/lib/training";
 
 interface TrainingSummaryProps {
   summary: TrainingSessionSummary;
   repertoireId: string;
+}
+
+function buildRetryConfig(
+  summary: TrainingSessionSummary,
+  repertoireId: string,
+  lineIds: string[],
+  drillFromFailure?: boolean,
+) {
+  return {
+    ...createDefaultTrainingConfig(repertoireId, summary.userColor),
+    lineIds,
+    drillFromFailure: drillFromFailure ? true : undefined,
+  };
 }
 
 export function TrainingSummary({
@@ -31,10 +47,16 @@ export function TrainingSummary({
     getTrainingHistory(),
   );
 
-  const failedLineIds = failed.map((result) => result.lineId).join(",");
-  const skippedLineIds = summary.skippedLines
-    .map((line) => line.lineId)
-    .join(",");
+  const failedLineIds = failed.map((result) => result.lineId);
+  const failureDrillResults = linesWithFailurePly(failed);
+  const failureDrillLineIds = failureDrillResults.map((result) => result.lineId);
+  const skippedLineIds = summary.skippedLines.map((line) => line.lineId);
+
+  const pushConfig = (config: ReturnType<typeof buildRetryConfig>) => {
+    router.push(
+      `/training/${repertoireId}/session?config=${encodeTrainingConfig(config)}`,
+    );
+  };
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-y-auto p-4">
@@ -50,6 +72,12 @@ export function TrainingSummary({
           </>
         ) : null}
       </p>
+
+      {summary.repertoireNames && summary.repertoireNames.length > 1 ? (
+        <p className="mt-1 text-sm text-muted-foreground">
+          Mixed session: {summary.repertoireNames.join(", ")}
+        </p>
+      ) : null}
 
       {trend ? (
         <p className="mt-2 text-sm text-muted-foreground">
@@ -100,6 +128,9 @@ export function TrainingSummary({
                     {result.failedAtSan
                       ? ` · You played: ${result.failedAtSan}`
                       : null}
+                    {result.failedAtPly !== undefined
+                      ? ` · Failed at ply ${result.failedAtPly + 1}`
+                      : null}
                   </p>
                 ) : null}
               </li>
@@ -127,13 +158,29 @@ export function TrainingSummary({
       ) : null}
 
       <div className="mt-6 flex flex-col gap-2">
+        {failureDrillLineIds.length > 0 ? (
+          <button
+            type="button"
+            onClick={() =>
+              pushConfig(
+                buildRetryConfig(
+                  summary,
+                  repertoireId,
+                  failureDrillLineIds,
+                  true,
+                ),
+              )
+            }
+            className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-white"
+          >
+            Drill failure points ({failureDrillLineIds.length})
+          </button>
+        ) : null}
         {failed.length > 0 ? (
           <button
             type="button"
             onClick={() =>
-              router.push(
-                `/training/${repertoireId}/session?color=${summary.userColor}&lines=${encodeURIComponent(failedLineIds)}`,
-              )
+              pushConfig(buildRetryConfig(summary, repertoireId, failedLineIds))
             }
             className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-white"
           >
@@ -144,9 +191,7 @@ export function TrainingSummary({
           <button
             type="button"
             onClick={() =>
-              router.push(
-                `/training/${repertoireId}/session?color=${summary.userColor}&lines=${encodeURIComponent(skippedLineIds)}`,
-              )
+              pushConfig(buildRetryConfig(summary, repertoireId, skippedLineIds))
             }
             className="rounded-lg bg-surface px-4 py-2.5 text-sm font-semibold text-foreground ring-1 ring-border-strong"
           >
@@ -156,9 +201,7 @@ export function TrainingSummary({
         <button
           type="button"
           onClick={() =>
-            router.push(
-              `/training/${repertoireId}/session?color=${summary.userColor}`,
-            )
+            pushConfig(buildRetryConfig(summary, repertoireId, []))
           }
           className="rounded-lg bg-surface px-4 py-2.5 text-sm font-semibold text-foreground ring-1 ring-border-strong"
         >

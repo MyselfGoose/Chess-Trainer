@@ -13,6 +13,13 @@ export interface LineMastery {
   passCount: number;
   failCount: number;
   attemptCount: number;
+  failedAtPly?: number;
+  failedAtSan?: string;
+}
+
+export interface LineResultMetadata {
+  failedAtPly?: number;
+  failedAtSan?: string;
 }
 
 import { qualityFromPass, scheduleAfterReview } from "./scheduler";
@@ -64,7 +71,11 @@ function isLineMastery(value: unknown): value is LineMastery {
       typeof record.lastTrainedAt === "string") &&
     typeof record.passCount === "number" &&
     typeof record.failCount === "number" &&
-    typeof record.attemptCount === "number"
+    typeof record.attemptCount === "number" &&
+    (record.failedAtPly === undefined ||
+      typeof record.failedAtPly === "number") &&
+    (record.failedAtSan === undefined ||
+      typeof record.failedAtSan === "string")
   );
 }
 
@@ -153,6 +164,7 @@ export function recordLineResult(
   lineId: string,
   passed: boolean,
   trainedAt: string = new Date().toISOString(),
+  metadata?: LineResultMetadata,
 ): LineMastery {
   const existing = getMastery(lineId) ?? createDefaultMastery(lineId, repertoireId);
 
@@ -163,6 +175,12 @@ export function recordLineResult(
     lastResult: passed ? "pass" : "fail",
     passCount: passed ? existing.passCount + 1 : existing.passCount,
     failCount: passed ? existing.failCount : existing.failCount + 1,
+    failedAtPly: passed
+      ? undefined
+      : metadata?.failedAtPly ?? existing.failedAtPly,
+    failedAtSan: passed
+      ? undefined
+      : metadata?.failedAtSan ?? existing.failedAtSan,
   };
 
   const scheduled = scheduleAfterReview(

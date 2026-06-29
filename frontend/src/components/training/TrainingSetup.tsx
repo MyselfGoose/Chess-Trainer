@@ -9,7 +9,9 @@ import { getRepertoire } from "@/lib/repertoires";
 import {
   aggregateLineStats,
   applySessionLineLimit,
+  countLinesAfterPlyRange,
   createDefaultTrainingConfig,
+  decodeTrainingConfig,
   encodeTrainingConfig,
   extractTrainingLines,
   filterLinesForColor,
@@ -47,6 +49,9 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
   const colorParam = searchParams.get("color");
   const chapterParam = searchParams.get("chapter");
   const linesParam = searchParams.get("lines");
+  const weakParam = searchParams.get("weak");
+  const drillParam = searchParams.get("drill");
+  const configParam = searchParams.get("config");
 
   const [isHydrated, setIsHydrated] = useState(false);
   const [userColor, setUserColor] = useState<TrainingColor>(
@@ -57,6 +62,10 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
   const [showComments, setShowComments] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [opponentPolicy, setOpponentPolicy] = useState<OpponentPolicy>("mainline");
+  const [plyRangeEnabled, setPlyRangeEnabled] = useState(false);
+  const [plyFrom, setPlyFrom] = useState(1);
+  const [plyTo, setPlyTo] = useState(12);
+  const [drillFromFailure, setDrillFromFailure] = useState(false);
   const [selectedLineIds, setSelectedLineIds] = useState<Set<string>>(new Set());
   const [selectedChapterIds, setSelectedChapterIds] = useState<Set<string>>(
     new Set(),
@@ -131,11 +140,50 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
     return ids.length > 0 ? new Set(ids) : null;
   }, [linesParam]);
 
+  const weakLineIdsFromUrl = useMemo(() => {
+    if (!weakParam) {
+      return null;
+    }
+    const ids = weakParam
+      .split(",")
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+    return ids.length > 0 ? new Set(ids) : null;
+  }, [weakParam]);
+
+  useEffect(() => {
+    if (!configParam) {
+      return;
+    }
+    const decoded = decodeTrainingConfig(configParam);
+    if (!decoded || decoded.repertoireId !== repertoireId) {
+      return;
+    }
+    /* eslint-disable react-hooks/set-state-in-effect -- URL prefill */
+    if (decoded.drillFromFailure) {
+      setDrillFromFailure(true);
+    }
+    if (decoded.plyRange) {
+      setPlyRangeEnabled(true);
+      setPlyFrom(decoded.plyRange.from + 1);
+      setPlyTo(decoded.plyRange.to + 1);
+    }
+  }, [configParam, repertoireId]);
+
+  useEffect(() => {
+    if (drillParam === "failure") {
+      /* eslint-disable react-hooks/set-state-in-effect -- URL prefill */
+      setDrillFromFailure(true);
+      /* eslint-enable react-hooks/set-state-in-effect */
+    }
+  }, [drillParam]);
+
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- reset selection when filters change */
-    if (prepLineIds) {
+    const urlLineIds = prepLineIds ?? weakLineIdsFromUrl;
+    if (urlLineIds) {
       const intersected = chapterFilteredLines.filter((line) =>
-        prepLineIds.has(line.id),
+        urlLineIds.has(line.id),
       );
       setSelectedLineIds(new Set(intersected.map((line) => line.id)));
       setLinesExpanded(true);
@@ -144,11 +192,53 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
     }
     setPage(0);
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [chapterFilteredLines, prepLineIds, userColor]);
+  }, [chapterFilteredLines, prepLineIds, userColor, weakLineIdsFromUrl]);
 
   const selectedLines = chapterFilteredLines.filter((line) =>
     selectedLineIds.has(line.id),
   );
+
+  const maxLineDepth = useMemo(() => {
+    if (selectedLines.length === 0) {
+      return chapterFilteredLines.reduce(
+        (max, line) => Math.max(max, line.moves.length),
+        0,
+      );
+    }
+    return selectedLines.reduce(
+      (max, line) => Math.max(max, line.moves.length),
+      0,
+    );
+  }, [chapterFilteredLines, selectedLines]);
+
+  const plyRangeError = useMemo(() => {
+    if (!plyRangeEnabled) {
+      return null;
+    }
+    if (!Number.isInteger(plyFrom) || !Number.isInteger(plyTo)) {
+      return "Ply range must be whole numbers.";
+    }
+    if (plyFrom < 1 || plyTo < 1) {
+      return "Ply numbers start at 1.";
+    }
+    if (plyFrom > plyTo) {
+      return "From ply must be less than or equal to to ply.";
+    }
+    if (maxLineDepth > 0 && plyFrom > maxLineDepth) {
+      return `From ply exceeds max depth (${maxLineDepth}).`;
+    }
+    return null;
+  }, [maxLineDepth, plyFrom, plyRangeEnabled, plyTo]);
+
+  const plyRangePreview = useMemo(() => {
+    if (!plyRangeEnabled || plyRangeError || selectedLines.length === 0) {
+      return null;
+    }
+    const range = { from: plyFrom - 1, to: plyTo - 1 };
+    const validCount = countLinesAfterPlyRange(selectedLines, range, userColor);
+    const dropped = selectedLines.length - validCount;
+    return { validCount, dropped };
+  }, [plyFrom, plyRangeEnabled, plyRangeError, plyTo, selectedLines, userColor]);
 
   const pagedLines = chapterFilteredLines.slice(
     page * PAGE_SIZE,
@@ -204,7 +294,7 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
   );
 
   const startTraining = () => {
-    if (selectedLines.length === 0) {
+    if (selectedLines.length === 0 || plyRangeError) {
       return;
     }
     setTrainingSoundEnabled(soundEnabled);
@@ -221,6 +311,10 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
       showCommentsAfterLine: showComments || mode === "learn",
       soundEnabled,
       opponentPolicy,
+      drillFromFailure: drillFromFailure ? true : undefined,
+      plyRange: plyRangeEnabled
+        ? { from: plyFrom - 1, to: plyTo - 1 }
+        : undefined,
     };
     router.push(
       `/training/${repertoireId}/session?config=${encodeTrainingConfig(config)}`,
@@ -245,6 +339,20 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
           <p className="mt-2 rounded-lg bg-accent-muted px-3 py-2 text-sm text-accent-foreground">
             Prep session — {selectedLineIds.size} line
             {selectedLineIds.size === 1 ? "" : "s"} preselected
+          </p>
+        ) : null}
+
+        {weakLineIdsFromUrl ? (
+          <p className="mt-2 rounded-lg bg-warning-muted px-3 py-2 text-sm text-warning-foreground">
+            Weak lines — {selectedLineIds.size} line
+            {selectedLineIds.size === 1 ? "" : "s"} preselected
+          </p>
+        ) : null}
+
+        {drillFromFailure ? (
+          <p className="mt-2 rounded-lg bg-danger-muted px-3 py-2 text-sm text-danger">
+            Failure-point drill — sessions start one move before your typical
+            mistake
           </p>
         ) : null}
 
@@ -482,9 +590,87 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
               </select>
             </div>
 
+            <details className="mt-6">
+              <summary className="cursor-pointer text-sm font-medium text-foreground/90">
+                Advanced
+              </summary>
+              <div className="mt-4 space-y-4">
+                <label className="flex items-center gap-2 text-sm text-foreground/90">
+                  <input
+                    type="checkbox"
+                    checked={drillFromFailure}
+                    onChange={(event) => setDrillFromFailure(event.target.checked)}
+                  />
+                  Drill from last failure point
+                </label>
+                <label className="flex items-center gap-2 text-sm text-foreground/90">
+                  <input
+                    type="checkbox"
+                    checked={plyRangeEnabled}
+                    onChange={(event) => setPlyRangeEnabled(event.target.checked)}
+                  />
+                  Limit to ply range
+                </label>
+                {plyRangeEnabled ? (
+                  <div className="space-y-2">
+                    <div className="flex gap-3">
+                      <label className="flex flex-1 flex-col gap-1 text-xs text-muted-foreground">
+                        From ply
+                        <input
+                          type="number"
+                          min={1}
+                          max={maxLineDepth || undefined}
+                          value={plyFrom}
+                          onChange={(event) =>
+                            setPlyFrom(Number.parseInt(event.target.value, 10) || 1)
+                          }
+                          className="rounded-md border border-border px-2 py-1.5 text-sm text-foreground"
+                        />
+                      </label>
+                      <label className="flex flex-1 flex-col gap-1 text-xs text-muted-foreground">
+                        To ply
+                        <input
+                          type="number"
+                          min={1}
+                          max={maxLineDepth || undefined}
+                          value={plyTo}
+                          onChange={(event) =>
+                            setPlyTo(Number.parseInt(event.target.value, 10) || 1)
+                          }
+                          className="rounded-md border border-border px-2 py-1.5 text-sm text-foreground"
+                        />
+                      </label>
+                    </div>
+                    {maxLineDepth > 0 ? (
+                      <p className="text-xs text-muted-foreground">
+                        Max depth in selection: {maxLineDepth} plies
+                      </p>
+                    ) : null}
+                    {plyRangeError ? (
+                      <p className="text-xs text-danger">{plyRangeError}</p>
+                    ) : plyRangePreview ? (
+                      <p className="text-xs text-muted-foreground">
+                        {plyRangePreview.validCount} line
+                        {plyRangePreview.validCount === 1 ? "" : "s"} after slice
+                        {plyRangePreview.dropped > 0
+                          ? ` · ${plyRangePreview.dropped} empty after slice`
+                          : ""}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            </details>
+
             <button
               type="button"
-              disabled={selectedLines.length === 0}
+              disabled={
+                selectedLines.length === 0 ||
+                Boolean(plyRangeError) ||
+                (plyRangeEnabled &&
+                  plyRangePreview !== null &&
+                  plyRangePreview.validCount === 0)
+              }
               onClick={startTraining}
               className="mt-6 w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-hover disabled:opacity-50"
             >

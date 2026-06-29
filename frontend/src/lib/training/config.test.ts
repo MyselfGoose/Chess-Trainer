@@ -48,6 +48,18 @@ describe("training config encode/decode", () => {
     expect(decodeTrainingConfig("")).toBeNull();
   });
 
+  it("round-trips adaptive training fields", () => {
+    const config = {
+      ...createDefaultTrainingConfig("rep-1", "white"),
+      drillFromFailure: true,
+      plyRange: { from: 3, to: 8 },
+      repertoireIds: ["rep-1", "rep-2"],
+      interleaved: false,
+    };
+    const encoded = encodeTrainingConfig(config);
+    expect(decodeTrainingConfig(encoded)).toEqual(config);
+  });
+
   it("buildLegacyTrainingConfig sets lineIds", () => {
     const config = buildLegacyTrainingConfig("rep-2", "black", ["0:a", "0:b"]);
     expect(config.lineIds).toEqual(["0:a", "0:b"]);
