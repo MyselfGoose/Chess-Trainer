@@ -68,6 +68,13 @@ export {
   utcDateString,
 } from "./mastery";
 export type { LineMastery, MasteryLevel } from "./mastery";
+export {
+  computeReadinessBreakdown,
+  computeReadinessScore,
+  lineReadinessWeight,
+  READINESS_WEIGHTS,
+} from "./readiness";
+export type { ReadinessBreakdown } from "./readiness";
 export type {
   TrainingColor,
   TrainingFeedback,

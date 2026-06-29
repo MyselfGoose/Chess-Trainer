@@ -46,6 +46,7 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
   const anchorParam = searchParams.get("anchor");
   const colorParam = searchParams.get("color");
   const chapterParam = searchParams.get("chapter");
+  const linesParam = searchParams.get("lines");
 
   const [isHydrated, setIsHydrated] = useState(false);
   const [userColor, setUserColor] = useState<TrainingColor>(
@@ -119,12 +120,31 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
     }
   }, [chapterParam, repertoire]);
 
+  const prepLineIds = useMemo(() => {
+    if (!linesParam) {
+      return null;
+    }
+    const ids = linesParam
+      .split(",")
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+    return ids.length > 0 ? new Set(ids) : null;
+  }, [linesParam]);
+
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- reset selection when filters change */
-    setSelectedLineIds(new Set(chapterFilteredLines.map((line) => line.id)));
+    if (prepLineIds) {
+      const intersected = chapterFilteredLines.filter((line) =>
+        prepLineIds.has(line.id),
+      );
+      setSelectedLineIds(new Set(intersected.map((line) => line.id)));
+      setLinesExpanded(true);
+    } else {
+      setSelectedLineIds(new Set(chapterFilteredLines.map((line) => line.id)));
+    }
     setPage(0);
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [chapterFilteredLines, userColor]);
+  }, [chapterFilteredLines, prepLineIds, userColor]);
 
   const selectedLines = chapterFilteredLines.filter((line) =>
     selectedLineIds.has(line.id),
@@ -218,6 +238,13 @@ export function TrainingSetup({ repertoireId }: TrainingSetupProps) {
         {anchorParam ? (
           <p className="mt-2 text-sm text-accent">
             {chapterFilteredLines.length} lines from this position
+          </p>
+        ) : null}
+
+        {prepLineIds ? (
+          <p className="mt-2 rounded-lg bg-accent-muted px-3 py-2 text-sm text-accent-foreground">
+            Prep session — {selectedLineIds.size} line
+            {selectedLineIds.size === 1 ? "" : "s"} preselected
           </p>
         ) : null}
 

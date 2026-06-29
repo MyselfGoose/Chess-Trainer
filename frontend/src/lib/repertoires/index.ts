@@ -111,6 +111,24 @@ export {
   type RepertoireAnalytics,
 } from "./analytics";
 export {
+  diffRepertoires,
+  hasRepertoireDiff,
+  linePathKey,
+  type ChangedComment,
+  type RepertoireDiff,
+  type SanPathChange,
+} from "./diff";
+export {
+  deleteSnapshot,
+  listSnapshots,
+  loadSnapshot,
+  MAX_SNAPSHOTS_PER_REPERTOIRE,
+  saveSnapshot,
+  SnapshotStorageError,
+  type RepertoireSnapshot,
+  type SnapshotSummary,
+} from "./snapshots";
+export {
   bumpRepertoireVersion,
   DEFAULT_REPERTOIRE_META,
   isValidRepertoire,

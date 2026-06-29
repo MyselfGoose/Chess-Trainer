@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import { BlunderReportPanel } from "@/components/repertoires/BlunderReportPanel";
+import { RepertoireDiffPanel } from "@/components/repertoires/RepertoireDiffPanel";
 import { CoverageMap } from "@/components/training/CoverageMap";
 import { formatPassRate } from "@/lib/training/history";
 import { extractTrainingLines } from "@/lib/training/lines";
@@ -170,9 +171,10 @@ export function RepertoireDashboard({
 
   return (
     <div className="space-y-8">
-      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <SummaryCard label="Total lines" value={analytics.totalLines} />
         <SummaryCard label="Coverage" value={`${analytics.coveragePercent}%`} />
+        <SummaryCard label="Readiness" value={`${analytics.readinessPercent}%`} />
         <SummaryCard
           label="Last studied"
           value={formatStudiedDate(analytics.lastStudiedAt)}
@@ -181,6 +183,8 @@ export function RepertoireDashboard({
       </dl>
 
       <BlunderReportPanel repertoire={repertoire} />
+
+      <RepertoireDiffPanel repertoire={repertoire} />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="rounded-xl border border-border bg-surface p-4">

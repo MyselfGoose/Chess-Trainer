@@ -10,8 +10,9 @@ Complete reference for every feature in RepertoireLab.
 4. [Building repertoires](#building-repertoires)
 5. [Study mode](#study-mode)
 6. [Opening training](#opening-training)
-7. [Free play board](#free-play-board)
-8. [Move navigation](#move-navigation)
+7. [Tournament prep](#tournament-prep)
+8. [Free play board](#free-play-board)
+9. [Move navigation](#move-navigation)
 
 ---
 
@@ -25,6 +26,7 @@ The top navigation bar is available on every page:
 | **Upload** | PGN import |
 | **Repertoires** | Library of all saved repertoires |
 | **Training** | Training hub and session launcher |
+| **Prep** | Tournament prep — opponent profiles and targeted drills |
 
 The free play board is linked from the home page footer (`/board`).
 
@@ -158,15 +160,20 @@ Analytics overview before you study or train:
 
 | Widget | What it shows |
 |--------|----------------|
-| **Summary cards** | Total lines, training coverage %, last studied date, weak line count |
+| **Summary cards** | Total lines, training coverage %, **readiness** %, last studied date, weak line count |
 | **Lines by opening** | ECO bar chart — how many lines fall under each opening |
 | **Depth histogram** | Line counts by ply depth (1–4, 5–8, 9–12, 13+) |
 | **Weak lines** | Lines with pass rate below 50% after 2+ attempts; links to filtered training |
 | **Chapter breakdown** | Lines, trained count, and weak count per chapter (plus unassigned lines) |
 | **Coverage map** | Color grid of mastery level per line |
 | **Engine blunder check** | Optional scan for large eval drops; report links back to study positions |
+| **Repertoire compare** | Save snapshots and diff against a snapshot, fork parent, or another repertoire |
 
 Coverage % counts lines where mastery level is beyond **new** (you have started training them).
+
+**Readiness** % weights each line by mastery quality: mastered lines count fully, strong review lines (pass rate above 70%) count 80%, learning and weaker review lines count 40%, and new lines count 0%. Coverage can be high while readiness is still low if you have started lines but not mastered them.
+
+**Repertoire compare**: click **Save snapshot** to capture the repertoire at a point in time (up to 5 snapshots per repertoire). Click **Compare** to diff the live repertoire against a saved snapshot, the fork parent (`forkedFromId`), or another repertoire. Results list added/removed lines, changed comments, and SAN path divergences. Snapshots do not change the live repertoire.
 
 **Engine blunder check** (optional, off by default): click **Scan repertoire** to run a client-side Stockfish pass over your tree. Positions where the eval drops more than 200cp after a repertoire move are flagged — advisory only, with copy to verify with your coach. Results link to study mode; training is never blocked. Large repertoires (500+ nodes) ask for confirmation before scanning.
 
@@ -438,6 +445,44 @@ Session summaries are stored locally (last 50 sessions). Stats on repertoire car
 | Created | Only `registeredLeafIds` |
 
 Lines are filtered by your chosen color — only lines where you have moves to play are included.
+
+Prep sessions can pre-select lines via the `?lines=` URL parameter (comma-separated line IDs). A banner shows how many lines were preselected.
+
+---
+
+## Tournament prep
+
+**Route:** `/prep`
+
+Prepare for a specific opponent by drilling only the lines that match their likely openings.
+
+### Opponent profiles
+
+Create a profile with:
+
+- **Name** and optional **match date**
+- **Notes** (free text)
+- **Likely openings** — one or more rows, each linking a repertoire with optional **chapter** and/or **ECO** filter
+
+Profiles are stored locally (`chess:opponent-profiles`).
+
+### Line resolution
+
+For each likely opening, lines are resolved in priority order:
+
+1. **Chapter** — if set, only lines assigned to that chapter
+2. **ECO code** — if set (and no chapter), lines whose opening prefix matches that ECO
+3. **Full repertoire** — all trainable lines in the linked repertoire
+
+Line IDs are deduplicated across openings and grouped by repertoire.
+
+### Prep plan
+
+Click **Generate prep plan** on an opponent card to see:
+
+- Groups per repertoire with line count
+- **Readiness** % per group (same formula as the dashboard)
+- **Train** link — opens training setup with those lines pre-checked (`?lines=...&color=white`)
 
 ---
 

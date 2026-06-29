@@ -7,6 +7,7 @@ import {
   findWeakLines,
   type LineStatsSummary,
 } from "@/lib/training/lineStats";
+import { computeReadinessScore } from "@/lib/training/readiness";
 import type { TrainingSessionSummary } from "@/lib/training/types";
 
 import { sortedChapters } from "./chapters";
@@ -37,6 +38,7 @@ export interface RepertoireAnalytics {
   openingBreakdown: OpeningCount[];
   depthHistogram: DepthBucket[];
   coveragePercent: number;
+  readinessPercent: number;
   lastStudiedAt: string | null;
   weakLineCount: number;
   weakLines: LineStatsSummary[];
@@ -192,6 +194,7 @@ export function computeRepertoireAnalytics(
   ).length;
   const coveragePercent =
     lines.length === 0 ? 0 : Math.round((trainedCount / lines.length) * 100);
+  const readinessPercent = computeReadinessScore(lines, masteryByLine);
 
   const lineStats = aggregateLineStats(repertoire.id, history, mastery);
   const weakLines = findWeakLines(lineStats);
@@ -202,6 +205,7 @@ export function computeRepertoireAnalytics(
     openingBreakdown: buildOpeningBreakdown(lines, ecoEntries),
     depthHistogram: buildDepthHistogram(lines),
     coveragePercent,
+    readinessPercent,
     lastStudiedAt: lastStudiedAtFromHistory(repertoire.id, history),
     weakLineCount: weakLines.length,
     weakLines: weakLines.slice(0, WEAK_LINES_LIMIT),

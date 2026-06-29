@@ -15,6 +15,7 @@ const NAV_LINKS = [
   { href: "/upload", label: "Upload" },
   { href: "/repertoires", label: "Repertoires" },
   { href: "/training", label: "Training" },
+  { href: "/prep", label: "Prep" },
 ] as const;
 
 function isActive(pathname: string, href: string): boolean {
