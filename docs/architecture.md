@@ -260,6 +260,46 @@ Common areas for future development:
 | Spaced repetition scheduling | `lib/training/` |
 | PGN export from library | Already in `lib/pgn/export.ts` |
 | Opening name database | `lib/pgn/` metadata enrichment |
+| Browser extension overlay | `lib/integration/extensionExport.ts` — FEN-keyed book JSON (separate MV3 repo) |
+
+---
+
+## Browser extension book format (H-02)
+
+RepertoireLab exports a compact JSON **extension book** for a future browser extension (not shipped in this repo). The extension would read live game positions and compare played moves against repertoire choices.
+
+### Export location
+
+- **Lib:** `frontend/src/lib/integration/extensionExport.ts`
+- **UI:** Repertoire card → **Extension book** → choose White or Black
+
+### Schema (version 1)
+
+```typescript
+interface ExtensionBookExport {
+  version: 1;
+  repertoireId: string;
+  repertoireName: string;
+  userColor: "white" | "black";
+  exportedAt: string; // ISO timestamp
+  positions: Array<{
+    fenKey: string;      // normalized FEN key (position before user's move)
+    allowedSans: string[]; // repertoire SANs from that position
+  }>;
+}
+```
+
+### Build algorithm
+
+For each game in the repertoire, walk nodes where `node.color` matches the user's color and `node.parentId` is set. At each such node, key the parent FEN (via `fenKey(normalizeFen(parent.fen))`) and collect SAN choices from `getMoveChoices(game, parent.id)`.
+
+### Future MV3 extension (out of scope)
+
+A separate repository would:
+
+1. Load the exported JSON into extension storage
+2. On chess site pages, read the current FEN and highlight in-book vs off-book moves
+3. Version-check `version` field for forward compatibility
 
 ---
 

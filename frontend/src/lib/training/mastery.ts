@@ -22,6 +22,11 @@ export interface LineResultMetadata {
   failedAtSan?: string;
 }
 
+import {
+  readStorageItem,
+  writeStorageItem,
+} from "@/lib/storage/migrate";
+
 import { qualityFromPass, scheduleAfterReview } from "./scheduler";
 
 export const LINE_MASTERY_KEY = "chess:line-mastery";
@@ -83,7 +88,7 @@ function readAllMastery(): Record<string, LineMastery> {
   if (!isBrowser()) {
     return {};
   }
-  const raw = localStorage.getItem(LINE_MASTERY_KEY);
+  const raw = readStorageItem(LINE_MASTERY_KEY);
   if (!raw) {
     return {};
   }
@@ -108,7 +113,7 @@ function writeAllMastery(data: Record<string, LineMastery>): void {
   if (!isBrowser()) {
     return;
   }
-  localStorage.setItem(LINE_MASTERY_KEY, JSON.stringify(data));
+  writeStorageItem(LINE_MASTERY_KEY, JSON.stringify(data));
 }
 
 export function createDefaultMastery(

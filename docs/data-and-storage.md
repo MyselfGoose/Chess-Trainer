@@ -1,12 +1,14 @@
 # Data & storage
 
-RepertoireLab persists all user data in the browser's **localStorage**. There is no server-side database in the default application.
+RepertoireLab persists all user data in the browser. By default this uses **localStorage**; large libraries automatically migrate to **IndexedDB** when the repertoire catalog exceeds 2 MB.
 
 ## Overview
 
 | Property | Value |
 |----------|-------|
-| Storage API | `window.localStorage` |
+| Primary storage API | `window.localStorage` |
+| Large-library backend | `IndexedDB` (`chess-repertoire-lab` database) |
+| Migration trigger | Catalog serialized size > 2 MB on app load |
 | Scope | Per origin (domain + port) |
 | Persistence | Until user clears site data |
 | Sync across devices | No |
@@ -23,7 +25,18 @@ RepertoireLab persists all user data in the browser's **localStorage**. There is
 | `chess:repertoire-catalog` | Array of all `Repertoire` objects |
 | `chess:study-session:{repertoireId}` | Study mode resume state per repertoire |
 | `chess:training-history` | Array of training session summaries |
+| `chess:line-mastery` | Spaced-repetition mastery per training line |
+| `chess:storage-backend` | `"localStorage"` or `"idb"` — active persistence backend |
+| `chess:game-analysis` | Session storage: last played-game deviation analysis |
 | `chess:pgn-study` | Legacy single-study storage (migration only) |
+
+### IndexedDB backend
+
+When `chess:storage-backend` is `"idb"`, the catalog, training history, and line mastery are stored in IndexedDB (`chess-repertoire-lab` / `kv` object store) with an in-memory cache for synchronous reads. `chess:storage-backend` itself remains in localStorage.
+
+**Auto-migration:** On first client load after an upgrade, if the catalog exceeds **2 MB** and IndexedDB is available, all `chess:*` data keys are copied to IndexedDB and the backend flag is set. Original localStorage values are kept as backup.
+
+**Implementation:** `frontend/src/lib/storage/migrate.ts`, initialized via `StorageInitializer` in `ClientProviders`.
 
 ### Repertoire catalog
 

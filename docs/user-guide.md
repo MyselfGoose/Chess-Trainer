@@ -6,13 +6,17 @@ Complete reference for every feature in RepertoireLab.
 
 1. [Navigation](#navigation)
 2. [PGN import](#pgn-import)
-3. [Repertoire library](#repertoire-library)
-4. [Building repertoires](#building-repertoires)
-5. [Study mode](#study-mode)
-6. [Opening training](#opening-training)
-7. [Tournament prep](#tournament-prep)
-8. [Free play board](#free-play-board)
-9. [Move navigation](#move-navigation)
+3. [Analyze played game](#analyze-played-game)
+4. [Repertoire library](#repertoire-library)
+5. [Starter packs & community directory](#starter-packs--community-directory)
+6. [Extension book export](#extension-book-export)
+7. [Building repertoires](#building-repertoires)
+8. [Study mode](#study-mode)
+9. [Opening training](#opening-training)
+10. [Tournament prep](#tournament-prep)
+11. [Tournament countdown](#tournament-countdown)
+12. [Free play board](#free-play-board)
+13. [Move navigation](#move-navigation)
 
 ---
 
@@ -92,6 +96,29 @@ Imported repertoires are read-only in the builder. Use **Duplicate & Edit** (on 
 
 ---
 
+## Analyze played game
+
+**Route:** `/upload` → **Analyze game** tab
+
+Compare a played game against one of your repertoires to find where you left your preparation.
+
+### Workflow
+
+1. Switch to **Analyze game** on the upload page.
+2. Paste or upload a PGN of the game you played.
+3. Select a repertoire and the color you played (White or Black).
+4. Click **Analyze** — the app walks the game's main line and reports the first move where your color played a SAN not in your repertoire.
+
+### Results
+
+- **In book** — every one of your moves matched repertoire choices at that position.
+- **Deviation** — shows the move number, SAN played, and repertoire options you had.
+- **Train from deviation** — opens study mode anchored at the parent position before the mistake.
+
+Analysis state is stored in session storage (`chess:game-analysis`) so you can navigate away and return during the same browser session.
+
+---
+
 ## Repertoire library
 
 **Route:** `/repertoires`
@@ -117,7 +144,25 @@ Each card shows:
 | **Edit** | Open the builder (created repertoires only) |
 | **Duplicate & Edit** | Fork an imported repertoire into an editable copy (imported only) |
 | **Export PGN** | Download the full repertoire as a PGN file (one-click from the card) |
+| **Extension book** | Download compact JSON for a future browser extension (choose White or Black) |
 | **Delete** | Remove from local storage (irreversible) |
+
+### Starter packs & community directory
+
+On `/repertoires`, above your library:
+
+- **Starter packs** — bundled example openings (Italian, Sicilian, London, etc.). Expand the section and click **Import** to add a pack to your library.
+- **Community repertoires** — when `NEXT_PUBLIC_REPERTOIRE_DIRECTORY_URL` is configured, browse a shared directory manifest and import entries. Search by name, author, or tags.
+
+---
+
+## Extension book export
+
+From any repertoire card, click **Extension book** and choose **As White** or **As Black**. This downloads a versioned JSON file mapping FEN keys to allowed repertoire SANs — intended for a future browser extension that overlays in-book vs off-book during live games on chess sites.
+
+The extension itself is not part of this repository; see [Architecture](./architecture.md) for the format specification.
+
+---
 
 ### Duplicate & Edit (imported repertoires)
 
@@ -502,6 +547,16 @@ Click **Generate prep plan** on an opponent card to see:
 - Groups per repertoire with line count
 - **Readiness** % per group (same formula as the dashboard)
 - **Train** link — opens training setup with those lines pre-checked (`?lines=...&color=white`)
+
+---
+
+## Tournament countdown
+
+When an opponent profile has a **match date** in the future, the home page shows a banner:
+
+> Tournament vs **{name}** in {N} days.
+
+Click **Open prep plan** to jump to `/prep` filtered to that opponent. Past match dates are ignored; if multiple opponents have upcoming dates, the soonest is shown.
 
 ---
 

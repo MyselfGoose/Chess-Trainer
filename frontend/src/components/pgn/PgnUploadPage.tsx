@@ -1,47 +1,79 @@
 "use client";
 
-import { useCallback } from "react";
+import { useState } from "react";
 
+import { GameAnalyzePanel } from "@/components/pgn/GameAnalyzePanel";
+import { PgnUploadForm, type PgnSavePayload } from "@/components/pgn/PgnUploadForm";
 import {
   createRepertoire,
   RepertoireStorageError,
   type Repertoire,
 } from "@/lib/repertoires";
 
-import { PgnUploadForm, type PgnSavePayload } from "./PgnUploadForm";
+type UploadMode = "import" | "analyze";
 
 export function PgnUploadPage() {
-  const handleImport = useCallback(
-    async (payload: PgnSavePayload): Promise<Repertoire | null> => {
-      try {
-        return createRepertoire({
-          name: payload.name,
-          source: "imported",
-          games: payload.games,
-          fileName: payload.fileName,
-        });
-      } catch (error) {
-        throw error instanceof RepertoireStorageError
-          ? error
-          : new Error("Failed to save repertoire.");
-      }
-    },
-    [],
-  );
+  const [mode, setMode] = useState<UploadMode>("import");
+
+  const handleImport = async (payload: PgnSavePayload): Promise<Repertoire | null> => {
+    try {
+      return createRepertoire({
+        name: payload.name,
+        source: "imported",
+        games: payload.games,
+        fileName: payload.fileName,
+      });
+    } catch (error) {
+      throw error instanceof RepertoireStorageError
+        ? error
+        : new Error("Failed to save repertoire.");
+    }
+  };
 
   return (
     <div className="min-h-full overflow-y-auto bg-surface-muted">
       <div className="mx-auto max-w-2xl px-4 py-12">
         <header className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-foreground">Import a PGN</h1>
+          <h1 className="text-3xl font-bold text-foreground">
+            {mode === "import" ? "Import a PGN" : "Analyze a played game"}
+          </h1>
           <p className="mt-2 text-muted-foreground">
-            Upload or paste a PGN file — it is saved to your library automatically
-            using the file name. Lichess studies can be imported by downloading
-            the PGN from Lichess and uploading it here.
+            {mode === "import"
+              ? "Upload or paste a repertoire PGN — it is saved to your library automatically."
+              : "Paste a game PGN and see where you left your repertoire."}
           </p>
         </header>
 
-        <PgnUploadForm onImport={handleImport} />
+        <div className="mb-6 flex rounded-lg bg-surface p-1 ring-1 ring-border">
+          <button
+            type="button"
+            onClick={() => setMode("import")}
+            className={`flex-1 rounded-md px-3 py-2 text-sm font-medium ${
+              mode === "import"
+                ? "bg-accent text-white"
+                : "text-foreground/90 hover:bg-background"
+            }`}
+          >
+            Import repertoire
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("analyze")}
+            className={`flex-1 rounded-md px-3 py-2 text-sm font-medium ${
+              mode === "analyze"
+                ? "bg-accent text-white"
+                : "text-foreground/90 hover:bg-background"
+            }`}
+          >
+            Analyze game
+          </button>
+        </div>
+
+        {mode === "import" ? (
+          <PgnUploadForm onImport={handleImport} />
+        ) : (
+          <GameAnalyzePanel />
+        )}
       </div>
     </div>
   );

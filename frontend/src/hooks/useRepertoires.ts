@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { listRepertoires, type Repertoire } from "@/lib/repertoires";
+import { ensureStorageInitialized } from "@/lib/storage/migrate";
 
 export function useRepertoires() {
   const [repertoires, setRepertoires] = useState<Repertoire[]>([]);
@@ -13,9 +14,16 @@ export function useRepertoires() {
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is client-only
-    refresh();
-    setIsHydrated(true);
+    let cancelled = false;
+    void ensureStorageInitialized().then(() => {
+      if (!cancelled) {
+        refresh();
+        setIsHydrated(true);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [refresh]);
 
   return { repertoires, isHydrated, refresh };

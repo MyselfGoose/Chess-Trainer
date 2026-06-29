@@ -1,6 +1,11 @@
-import { MAX_CATALOG_BYTES, REPERTOIRE_CATALOG_KEY } from "./types";
 import { TRAINING_HISTORY_KEY } from "@/lib/training/history";
 import { LINE_MASTERY_KEY } from "@/lib/training/mastery";
+import {
+  getStorageBackend,
+  readStorageItem,
+} from "@/lib/storage/migrate";
+
+import { MAX_CATALOG_BYTES, REPERTOIRE_CATALOG_KEY } from "./types";
 
 export interface StorageStats {
   catalogBytes: number;
@@ -18,7 +23,7 @@ function byteLength(value: string | null): number {
 }
 
 export function computeStorageStats(): StorageStats {
-  if (typeof localStorage === "undefined") {
+  if (typeof window === "undefined") {
     return {
       catalogBytes: 0,
       catalogLimitBytes: MAX_CATALOG_BYTES,
@@ -28,19 +33,24 @@ export function computeStorageStats(): StorageStats {
     };
   }
 
-  let totalBytes = 0;
-  for (let index = 0; index < localStorage.length; index += 1) {
-    const key = localStorage.key(index);
-    if (key?.startsWith("chess:")) {
-      totalBytes += byteLength(localStorage.getItem(key));
+  const catalogBytes = byteLength(readStorageItem(REPERTOIRE_CATALOG_KEY));
+  const trainingHistoryBytes = byteLength(readStorageItem(TRAINING_HISTORY_KEY));
+  const masteryBytes = byteLength(readStorageItem(LINE_MASTERY_KEY));
+
+  let totalBytes = catalogBytes + trainingHistoryBytes + masteryBytes;
+  if (getStorageBackend() === "localStorage" && typeof localStorage !== "undefined") {
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (
+        key?.startsWith("chess:") &&
+        key !== REPERTOIRE_CATALOG_KEY &&
+        key !== TRAINING_HISTORY_KEY &&
+        key !== LINE_MASTERY_KEY
+      ) {
+        totalBytes += byteLength(localStorage.getItem(key));
+      }
     }
   }
-
-  const catalogBytes = byteLength(localStorage.getItem(REPERTOIRE_CATALOG_KEY));
-  const trainingHistoryBytes = byteLength(
-    localStorage.getItem(TRAINING_HISTORY_KEY),
-  );
-  const masteryBytes = byteLength(localStorage.getItem(LINE_MASTERY_KEY));
 
   return {
     catalogBytes,

@@ -7,6 +7,7 @@ import { useCallback, useState } from "react";
 import { DuplicateForkModal } from "@/components/repertoires/DuplicateForkModal";
 
 import { computeLineStats } from "@/lib/pgn";
+import { downloadExtensionBook } from "@/lib/integration/extensionExport";
 import { repertoireToPgn, downloadPgnFile } from "@/lib/pgn/export";
 import {
   aggregateLineStats,
@@ -20,6 +21,7 @@ import {
   updateRepertoire,
   type Repertoire,
 } from "@/lib/repertoires";
+import type { TrainingColor } from "@/lib/training/types";
 
 interface RepertoireCardProps {
   repertoire: Repertoire;
@@ -53,6 +55,7 @@ export function RepertoireCard({ repertoire, onRefresh }: RepertoireCardProps) {
   const [showRename, setShowRename] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [showFork, setShowFork] = useState(false);
+  const [showExtensionDownload, setShowExtensionDownload] = useState(false);
   const [name, setName] = useState(repertoire.name);
   const [renameError, setRenameError] = useState<string | null>(null);
   const stats = aggregateStats(repertoire);
@@ -95,6 +98,14 @@ export function RepertoireCard({ repertoire, onRefresh }: RepertoireCardProps) {
     const pgn = repertoireToPgn(repertoire.games);
     downloadPgnFile(pgn, repertoire.name);
   }, [repertoire.games, repertoire.name]);
+
+  const handleExtensionDownload = useCallback(
+    (userColor: TrainingColor) => {
+      downloadExtensionBook(repertoire, userColor);
+      setShowExtensionDownload(false);
+    },
+    [repertoire],
+  );
 
   return (
     <article className="rounded-xl bg-surface p-5 ring-1 ring-border">
@@ -244,6 +255,13 @@ export function RepertoireCard({ repertoire, onRefresh }: RepertoireCardProps) {
         </button>
         <button
           type="button"
+          onClick={() => setShowExtensionDownload(true)}
+          className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground transition hover:bg-background"
+        >
+          Extension book
+        </button>
+        <button
+          type="button"
           onClick={() => setShowDelete(true)}
           className="rounded-lg px-3 py-1.5 text-sm font-medium text-red-600 transition hover:bg-danger-muted"
         >
@@ -284,6 +302,41 @@ export function RepertoireCard({ repertoire, onRefresh }: RepertoireCardProps) {
           }}
           onCancel={() => setShowFork(false)}
         />
+      ) : null}
+
+      {showExtensionDownload ? (
+        <div className="mt-4 rounded-lg bg-background p-3 ring-1 ring-border">
+          <p className="text-sm font-medium text-foreground">
+            Download extension book
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Compact JSON for a future browser extension. Choose which color you
+            play.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => handleExtensionDownload("white")}
+              className="rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-white"
+            >
+              As White
+            </button>
+            <button
+              type="button"
+              onClick={() => handleExtensionDownload("black")}
+              className="rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-white"
+            >
+              As Black
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowExtensionDownload(false)}
+              className="rounded-md px-3 py-1.5 text-xs text-muted-foreground"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
       ) : null}
     </article>
   );

@@ -1,0 +1,28 @@
+{
+  "packs": [
+    {
+      "id": "italian-white",
+      "fileName": "italian-white.pgn",
+      "name": "Italian Game (White)",
+      "description": "Classic Italian with e4 e5 Nf3 Nc6 Bc4 — a compact starter for White.",
+      "color": "white",
+      "tags": ["italian", "e4", "white"]
+    },
+    {
+      "id": "sicilian-black",
+      "fileName": "sicilian-black.pgn",
+      "name": "Sicilian Defense (Black)",
+      "description": "Basic Sicilian lines as Black against 1.e4.",
+      "color": "black",
+      "tags": ["sicilian", "e4", "black"]
+    },
+    {
+      "id": "london-white",
+      "fileName": "london-white.pgn",
+      "name": "London System (White)",
+      "description": "Solid London setup with d4 and Bf4 for White.",
+      "color": "white",
+      "tags": ["london", "d4", "white"]
+    }
+  ]
+}

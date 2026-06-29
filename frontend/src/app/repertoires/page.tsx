@@ -3,12 +3,16 @@
 import Link from "next/link";
 import { useState } from "react";
 
+import { CommunityDirectorySection } from "@/components/repertoires/CommunityDirectorySection";
 import { MergeRepertoiresModal } from "@/components/repertoires/MergeRepertoiresModal";
 import { RepertoireBackupSection } from "@/components/repertoires/RepertoireBackupSection";
 import { RepertoireList } from "@/components/repertoires/RepertoireList";
+import { StarterPacksSection } from "@/components/repertoires/StarterPacksSection";
+import { useRepertoires } from "@/hooks/useRepertoires";
 
 export default function RepertoiresPage() {
   const [showMerge, setShowMerge] = useState(false);
+  const { refresh } = useRepertoires();
 
   return (
     <div className="min-h-full overflow-y-auto bg-surface-muted">
@@ -43,6 +47,8 @@ export default function RepertoiresPage() {
           </div>
         </header>
 
+        <StarterPacksSection onImported={refresh} />
+        <CommunityDirectorySection onImported={refresh} />
         <RepertoireList />
         <RepertoireBackupSection />
       </div>

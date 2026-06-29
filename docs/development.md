@@ -31,6 +31,14 @@ this is **not** from RepertoireLab application code (there is no `contentWindow`
 
 If the error persists in production (`npm run start`), capture the full stack trace from DevTools and file an issue with the stack location.
 
+## Environment variables
+
+| Variable | Purpose |
+|----------|---------|
+| `NEXT_PUBLIC_REPERTOIRE_DIRECTORY_URL` | URL to a community repertoire directory JSON manifest. When unset, the **Community repertoires** section is hidden on `/repertoires`. For local testing, set to `/directory/example-directory.json` (see `frontend/.env.example`). |
+
+Create `frontend/.env.local` for local overrides (not committed).
+
 ## Stockfish engine (GPL)
 
 RepertoireLab ships **Stockfish** for optional client-side analysis in study mode. Stockfish is licensed under **GPL-3.0**.

@@ -1,4 +1,8 @@
 import type { StudyGame } from "@/lib/pgn";
+import {
+  readStorageItem,
+  writeStorageItem,
+} from "@/lib/storage/migrate";
 
 import {
   DEFAULT_REPERTOIRE_META,
@@ -42,7 +46,7 @@ function readCatalog(): Repertoire[] {
   if (!isBrowser()) {
     return [];
   }
-  const raw = localStorage.getItem(REPERTOIRE_CATALOG_KEY);
+  const raw = readStorageItem(REPERTOIRE_CATALOG_KEY);
   if (!raw) {
     return [];
   }
@@ -59,7 +63,7 @@ function writeCatalog(repertoires: Repertoire[]): void {
       "Repertoire library is full. Delete some repertoires or export them before saving more.",
     );
   }
-  localStorage.setItem(REPERTOIRE_CATALOG_KEY, serialized);
+  writeStorageItem(REPERTOIRE_CATALOG_KEY, serialized);
 }
 
 export function listRepertoires(): Repertoire[] {

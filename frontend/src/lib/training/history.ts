@@ -1,3 +1,8 @@
+import {
+  readStorageItem,
+  writeStorageItem,
+} from "@/lib/storage/migrate";
+
 import type { TrainingSessionSummary } from "./types";
 
 export const TRAINING_HISTORY_KEY = "chess:training-history";
@@ -18,7 +23,7 @@ function readHistory(): TrainingSessionSummary[] {
   if (!isBrowser()) {
     return [];
   }
-  const raw = localStorage.getItem(TRAINING_HISTORY_KEY);
+  const raw = readStorageItem(TRAINING_HISTORY_KEY);
   if (!raw) {
     return [];
   }
@@ -37,7 +42,7 @@ function writeHistory(history: TrainingSessionSummary[]): void {
   if (!isBrowser()) {
     return;
   }
-  localStorage.setItem(
+  writeStorageItem(
     TRAINING_HISTORY_KEY,
     JSON.stringify(history.slice(0, MAX_HISTORY_ENTRIES)),
   );

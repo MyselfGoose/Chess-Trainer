@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "updatedAt": "2026-06-29T00:00:00.000Z",
+  "entries": [
+    {
+      "id": "example-italian",
+      "name": "Example Italian (White)",
+      "author": "RepertoireLab",
+      "description": "Sample community entry pointing at the bundled Italian starter pack.",
+      "downloadUrl": "/packs/italian-white.pgn",
+      "tags": ["italian", "white", "example"],
+      "color": "white"
+    }
+  ]
+}

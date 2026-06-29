@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { TournamentCountdownBanner } from "@/components/prep/TournamentCountdownBanner";
+
 function HeroBoardIllustration() {
   const light = "bg-[#eeeed2] dark:bg-[#484742]";
   const dark = "bg-[#769656] dark:bg-[#312e2b]";
@@ -82,6 +84,7 @@ export default function HomePage() {
                 Start training
               </Link>
             </div>
+            <TournamentCountdownBanner />
           </div>
           <HeroBoardIllustration />
         </div>

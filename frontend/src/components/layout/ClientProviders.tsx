@@ -3,6 +3,7 @@
 import { useEffect, type ReactNode } from "react";
 
 import { KeyboardShortcutsDialog } from "@/components/help/KeyboardShortcutsDialog";
+import { StorageInitializer } from "@/components/layout/StorageInitializer";
 import { preloadFeedbackSounds } from "@/lib/sounds/feedbackSounds";
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
 
@@ -23,6 +24,7 @@ function SoundPreloader() {
 export function ClientProviders({ children }: { children: ReactNode }) {
   return (
     <ThemeProvider>
+      <StorageInitializer />
       {children}
       <KeyboardShortcutsDialog />
       <SoundPreloader />
